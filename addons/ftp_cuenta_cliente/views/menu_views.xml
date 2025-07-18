@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Main Menu -->
+        <menuitem id="ftp_cuenta_cliente_main_menu"
+                  name="FTP Cuenta Cliente"
+                  web_icon="ftp_cuenta_cliente,static/description/icon.png"
+                  sequence="10"/>
+
+        <!-- Configuration Menu -->
+        <menuitem id="ftp_config_menu"
+                  name="FTP Configurations"
+                  parent="ftp_cuenta_cliente_main_menu"
+                  action="ftp_config_action"
+                  sequence="10"/>
+
+        <!-- Files Menu -->
+        <menuitem id="ftp_files_menu"
+                  name="Processed Files"
+                  parent="ftp_cuenta_cliente_main_menu"
+                  action="ftp_file_action"
+                  sequence="20"/>
+
+    </data>
+</odoo>

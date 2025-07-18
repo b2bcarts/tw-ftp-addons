@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ftp_config_manager,ftp.config.manager,model_ftp_config,base.group_system,1,1,1,1
+access_ftp_config_user,ftp.config.user,model_ftp_config,base.group_user,1,0,0,0
+access_ftp_file_manager,ftp.file.manager,model_ftp_file,base.group_system,1,1,1,1
+access_ftp_file_user,ftp.file.user,model_ftp_file,base.group_user,1,0,0,0
+access_ftp_service_manager,ftp.service.manager,model_ftp_service,base.group_system,1,1,1,1
