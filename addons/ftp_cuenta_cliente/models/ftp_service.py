@@ -429,6 +429,313 @@ class FtpService(models.Model):
         except Exception as e:
             _logger.warning(f"Error closing connection: {str(e)}")
     
+    def _create_sale_orders_from_content(self, content, filename):
+        """Create sale orders for each technician found in the file content"""
+        try:
+            _logger.info(f"Creating sale orders from file: {filename}")
+            created_orders = []
+            
+            for sheet_name, sheet_data in content.items():
+                _logger.info(f"Processing sheet: {sheet_name} with {len(sheet_data)} rows")
+                
+                for row_idx, row_data in enumerate(sheet_data):
+                    try:
+                        # Extract technician information from different possible column names
+                        technician_name = None
+                        technician_rut = None
+                        
+                        # Look for technician name in various possible columns
+                        for key in row_data.keys():
+                            key_lower = key.lower()
+                            if 'tecnico' in key_lower and not technician_name:
+                                technician_name = row_data[key]
+                            if 'rut' in key_lower and 'tecnico' in key_lower and not technician_rut:
+                                technician_rut = row_data[key]
+                            elif 'rut' in key_lower and not technician_rut and not 'cliente' in key_lower:
+                                technician_rut = row_data[key]
+                        
+                        # Skip if no technician found
+                        if not technician_name or not str(technician_name).strip():
+                            _logger.debug(f"No technician found in row {row_idx + 1}, skipping")
+                            continue
+                            
+                        technician_name = str(technician_name).strip()
+                        technician_rut = str(technician_rut).strip() if technician_rut else ''
+                        
+                        _logger.info(f"Processing technician: {technician_name} (RUT: {technician_rut})")
+                        
+                        # Find matching fsm_location for this technician
+                        fsm_location = None
+                        
+                        # First try to match by RUT if available
+                        if technician_rut:
+                            partner_by_rut = self.env['res.partner'].search([
+                                ('vat', '=', technician_rut)
+                            ], limit=1)
+                            if partner_by_rut:
+                                fsm_location = self.env['fsm.location'].search([
+                                    ('partner_id', '=', partner_by_rut.id)
+                                ], limit=1)
+                        
+                        # If not found by RUT, try to match by name
+                        if not fsm_location:
+                            # Clean name for matching
+                            name_clean = technician_name.replace('.', ' ').title()
+                            partner_by_name = self.env['res.partner'].search([
+                                ('name', 'ilike', name_clean)
+                            ], limit=1)
+                            if partner_by_name:
+                                fsm_location = self.env['fsm.location'].search([
+                                    ('partner_id', '=', partner_by_name.id)
+                                ], limit=1)
+                        
+                        # If still not found, try partial matching
+                        if not fsm_location:
+                            # Try with original name format
+                            partner_partial = self.env['res.partner'].search([
+                                ('name', 'ilike', technician_name.replace('.', '%'))
+                            ], limit=1)
+                            if partner_partial:
+                                fsm_location = self.env['fsm.location'].search([
+                                    ('partner_id', '=', partner_partial.id)
+                                ], limit=1)
+                        
+                        if not fsm_location:
+                            _logger.warning(f"No fsm_location found for technician: {technician_name} (RUT: {technician_rut})")
+                            continue
+                        
+                        _logger.info(f"Found fsm_location {fsm_location.id} for technician {technician_name}")
+                        
+                        # Prepare sale order data
+                        order_name = f"{filename.split('.')[0]} - {technician_name} - Row {row_idx + 1}"
+                        
+                        # Create sale order
+                        sale_order_data = {
+                            'name': order_name,
+                            'partner_id': fsm_location.partner_id.id,
+                            'state': 'draft',
+                            'origin': f"FTP File: {filename}",
+                            'note': self._build_order_notes(row_data, sheet_name, row_idx + 1),
+                            'fsm_location_id': fsm_location.id,  # Link to fsm_location
+                        }
+                        
+                        sale_order = self.env['sale.order'].create(sale_order_data)
+                        
+                        # Create order lines based on row data
+                        self._create_order_lines(sale_order, row_data)
+                        
+                        # Create inventory movements to technician location
+                        inventory_moves = self._create_inventory_movements(sale_order, fsm_location, row_data)
+                        
+                        created_orders.append({
+                            'order_id': sale_order.id,
+                            'order_name': sale_order.name,
+                            'technician': technician_name,
+                            'location_id': fsm_location.id,
+                            'row': row_idx + 1,
+                            'inventory_moves': len(inventory_moves)
+                        })
+                        
+                        _logger.info(f"✓ Created sale order {sale_order.name} for {technician_name} with {len(inventory_moves)} inventory moves")
+                        
+                    except Exception as e:
+                        _logger.error(f"Error creating sale order for row {row_idx + 1}: {str(e)}")
+                        continue
+            
+            _logger.info(f"Created {len(created_orders)} sale orders from file {filename}")
+            return created_orders
+            
+        except Exception as e:
+            _logger.error(f"Error creating sale orders from content: {str(e)}")
+            return []
+    
+    def _build_order_notes(self, row_data, sheet_name, row_number):
+        """Build comprehensive notes for the sale order from row data as compact JSON"""
+        import json
+        
+        # Build JSON structure with metadata and original data
+        notes_data = {
+            "source": "FTP file",
+            "sheet": sheet_name,
+            "row": row_number,
+            "original_data": {}
+        }
+        
+        # Add all non-empty row data to original_data
+        for key, value in row_data.items():
+            if value and str(value).strip():
+                notes_data["original_data"][key] = str(value).strip()
+        
+        # Return JSON as compact string (no indentation, no line breaks)
+        return json.dumps(notes_data, ensure_ascii=False, separators=(',', ':'))
+    
+    def _create_order_lines(self, sale_order, row_data):
+        """Create order lines based on row data and extract quantities from specific fields"""
+        try:
+            # Look for service-related information in the row
+            service_description = self._extract_service_description(row_data)
+            
+            # Extract product information and quantities from row
+            products_to_order = self._extract_products_from_row(row_data)
+            
+            if not products_to_order:
+                # Create a generic service line if no specific products found
+                service_product = self._get_or_create_service_product()
+                order_line_data = {
+                    'order_id': sale_order.id,
+                    'product_id': service_product.id,
+                    'name': service_description,
+                    'product_uom_qty': 1,
+                    'price_unit': 0.0,
+                }
+                self.env['sale.order.line'].create(order_line_data)
+                _logger.info(f"Created generic service order line for sale order {sale_order.name}")
+            else:
+                # Create order lines for each product found
+                for product_info in products_to_order:
+                    order_line_data = {
+                        'order_id': sale_order.id,
+                        'product_id': product_info['product'].id,
+                        'name': product_info['description'],
+                        'product_uom_qty': product_info['quantity'],
+                        'price_unit': 0.0,
+                    }
+                    self.env['sale.order.line'].create(order_line_data)
+                    _logger.info(f"Created order line for {product_info['product'].name} (qty: {product_info['quantity']})")
+            
+        except Exception as e:
+            _logger.error(f"Error creating order lines: {str(e)}")
+    
+    def _extract_products_from_row(self, row_data):
+        """Extract product information from row data"""
+        products = []
+        
+        try:
+            # Look for quantity fields (cantidad_pinpad, cantidad_pos, etc.)
+            quantity_fields = {
+                'cantidad_pinpad': 'PinPad Device',
+                'cantidad_pos': 'POS Terminal',
+                'cantidad': 'Generic Equipment'
+            }
+            
+            for field, product_name in quantity_fields.items():
+                if field in row_data and row_data[field]:
+                    try:
+                        quantity = float(row_data[field])
+                        if quantity > 0:
+                            product = self._get_or_create_product(product_name)
+                            products.append({
+                                'product': product,
+                                'quantity': quantity,
+                                'description': f"{product_name} - {row_data.get('descripcion', '')}"
+                            })
+                    except (ValueError, TypeError):
+                        _logger.warning(f"Invalid quantity in field {field}: {row_data[field]}")
+            
+            # Also look for equipment type information
+            if 'tipo.equipo' in row_data and row_data['tipo.equipo']:
+                equipment_type = str(row_data['tipo.equipo']).strip()
+                if equipment_type:
+                    product = self._get_or_create_product(f"Equipment - {equipment_type}")
+                    # Check if we already have this product in the list
+                    existing = next((p for p in products if p['product'].id == product.id), None)
+                    if not existing:
+                        products.append({
+                            'product': product,
+                            'quantity': 1,
+                            'description': f"Equipment Type: {equipment_type}"
+                        })
+            
+        except Exception as e:
+            _logger.error(f"Error extracting products from row: {str(e)}")
+        
+        return products
+    
+    def _get_or_create_product(self, product_name):
+        """Get or create a product for inventory movements"""
+        product = self.env['product.product'].search([
+            ('name', '=', product_name),
+        ], limit=1)
+        
+        if not product:
+            product = self.env['product.product'].create({
+                'name': product_name,
+                'type': 'product',  # Storable product for inventory
+                'list_price': 0.0,
+                'standard_price': 0.0,
+                'description': f'Product created from FTP processing: {product_name}',
+                'detailed_type': 'product',
+                'tracking': 'none',
+            })
+            _logger.info(f"Created product: {product_name}")
+        
+        return product
+    
+    def _create_inventory_movements(self, sale_order, fsm_location, row_data):
+        """Log inventory movements that would be created (stock module not available)"""
+        try:
+            inventory_moves = []
+            
+            # Extract products that need to be moved
+            products_to_move = self._extract_products_from_row(row_data)
+            
+            if not products_to_move:
+                _logger.info(f"No products found for inventory movement in sale order {sale_order.name}")
+                return inventory_moves
+            
+            # Log what inventory movements would be created
+            _logger.info(f"=== INVENTORY MOVEMENTS (SIMULATION) ===")
+            _logger.info(f"Sale Order: {sale_order.name}")
+            _logger.info(f"Technician Location: {fsm_location.partner_id.name}")
+            
+            for product_info in products_to_move:
+                if product_info['product'].type == 'product':  # Only for storable products
+                    _logger.info(f"MOVE: {product_info['product'].name} (qty: {product_info['quantity']}) -> {fsm_location.partner_id.name}")
+                    inventory_moves.append(f"move_simulation_{len(inventory_moves) + 1}")
+            
+            _logger.info(f"Total simulated inventory moves: {len(inventory_moves)}")
+            return inventory_moves
+            
+        except Exception as e:
+            _logger.error(f"Error simulating inventory movements: {str(e)}")
+            return []
+    def _extract_service_description(self, row_data):
+        """Extract service description from row data"""
+        description_parts = []
+        
+        # Look for key fields that describe the service
+        key_fields = ['tipo.solicitud', 'descripcion', 'tipo.equipo', 'observacion', 'nombre.fantasia']
+        
+        for field in key_fields:
+            if field in row_data and row_data[field] and str(row_data[field]).strip():
+                description_parts.append(f"{field.replace('.', ' ').title()}: {row_data[field]}")
+        
+        # If no specific fields found, create generic description
+        if not description_parts:
+            description_parts.append("Field Service - Technical Work")
+        
+        return " | ".join(description_parts)
+    
+    def _get_or_create_service_product(self):
+        """Get or create a generic service product for FTP orders"""
+        product = self.env['product.product'].search([
+            ('name', '=', 'FTP Technical Service'),
+            ('type', '=', 'service')
+        ], limit=1)
+        
+        if not product:
+            product = self.env['product.product'].create({
+                'name': 'FTP Technical Service',
+                'type': 'service',
+                'list_price': 0.0,
+                'standard_price': 0.0,
+                'description': 'Generic technical service product for FTP processed orders',
+                'detailed_type': 'service',
+            })
+            _logger.info("Created generic FTP Technical Service product")
+        
+        return product
+    
     @api.model
     def process_ftp_files(self, config_id=None):
         """Main method to process FTP files"""
@@ -526,6 +833,12 @@ class FtpService(models.Model):
                                         total_cols = max(total_cols, sheet_cols)
                                 sheet_names = list(content.keys())
                                 
+                                # Create sale orders from content
+                                created_orders = self._create_sale_orders_from_content(content, filename)
+                                
+                                # Calculate total inventory moves
+                                total_inventory_moves = sum(order.get('inventory_moves', 0) for order in created_orders)
+                                
                                 # Create file record
                                 file_record = self.env['ftp.file'].create({
                                     'name': filename,
@@ -536,9 +849,11 @@ class FtpService(models.Model):
                                     'status': 'processed',
                                     'row_count': total_rows,
                                     'column_count': total_cols,
-                                    'sheet_names': ', '.join(sheet_names)
+                                    'sheet_names': ', '.join(sheet_names),
+                                    'sale_orders_created': len(created_orders),
+                                    'inventory_moves_created': total_inventory_moves
                                 })
-                                _logger.info(f"Created file record for: {filename}")
+                                _logger.info(f"Created file record for: {filename} with {len(created_orders)} sale orders and {total_inventory_moves} inventory moves")
                                 
                                 # Move file to processed directory (only for FTP/SFTP for now)
                                 if connection_info['type'] in ['ftp', 'ftps', 'sftp']:

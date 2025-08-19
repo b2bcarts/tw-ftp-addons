@@ -28,6 +28,8 @@ class FtpFile(models.Model):
     row_count = fields.Integer('Number of Rows')
     column_count = fields.Integer('Number of Columns')
     sheet_names = fields.Text('Sheet Names')
+    sale_orders_created = fields.Integer('Sale Orders Created', default=0)
+    inventory_moves_created = fields.Integer('Inventory Moves Created', default=0)
     
     @api.depends('name')
     def _compute_display_name(self):

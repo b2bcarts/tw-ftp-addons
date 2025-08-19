@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Comentamos todo el contenido para evitar errores mientras nos enfocamos en la vista tree -->
+    <!--
+    <template id="report_inventory_inherit_expiration" inherit_id="stock.report_inventory">
+        <xpath expr="//table/thead/tr" position="inside">
+            <th><strong>SKU</strong></th>
+            <th><strong>Fecha de Expiración</strong></th>
+        </xpath>
+        
+        <xpath expr="//table/tbody/tr/td[1]" position="after">
+            <td><span t-field="line.default_code"/></td>
+        </xpath>
+        
+        <xpath expr="//table/tbody/tr" position="inside">
+            <td><span t-field="line.expiration_date" t-options="{'widget': 'date'}"/></td>
+        </xpath>
+    </template>
+    -->
+</odoo>

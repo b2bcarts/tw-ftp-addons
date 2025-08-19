@@ -33,7 +33,7 @@
     """,
     'author': 'Your Company',
     'website': 'https://www.yourcompany.com',
-    'depends': ['base', 'sale'],
+    'depends': ['base', 'sale', 'fieldservice'],
     'data': [
         'security/ir.model.access.csv',
         'data/cron_data.xml',

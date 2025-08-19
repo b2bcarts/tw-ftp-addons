@@ -1,6 +1,6 @@
-# FTP Cuenta Cliente - Odoo 16 Addon
+# Odoo 16 Field Service & FTP Integration Platform
 
-This project provides a Docker-based Odoo 16 environment with a custom FTP addon for automated file transfer and Excel processing.
+This project provides a Docker-based Odoo 16 environment with comprehensive Field Service Management capabilities and custom FTP automation for Excel file processing.
 
 ## Project Structure
 
@@ -10,8 +10,13 @@ addon-ftp/
 ├── .env                        # Environment variables
 ├── config/
 │   └── odoo.conf              # Odoo configuration
-├── addons/
-│   └── ftp_cuenta_cliente/    # Custom FTP addon
+├── addons/                    # All Odoo addons
+│   ├── ftp_cuenta_cliente/    # Custom FTP addon
+│   ├── fieldservice/          # Core FSM module
+│   ├── fieldservice_*/        # FSM extensions (22 modules)
+│   ├── extra_fields_ubicaciones/  # Stock location enhancements
+│   ├── stock_picking_to_batch_group_fields/  # Batch picking
+│   └── web_domain_field/      # Web UI enhancements
 └── README.md                  # This file
 ```
 
@@ -22,16 +27,22 @@ addon-ftp/
    docker compose up -d
    ```
 
-2. **Access Odoo:**
+2. **Fix Python dependencies (if fresh install):**
+   ```bash
+   docker exec addon-ftp-web-1 pip uninstall -y numpy pandas bcrypt PyNaCl
+   docker exec addon-ftp-web-1 pip install numpy==1.24.3 pandas==2.0.3 bcrypt PyNaCl
+   ```
+
+3. **Access Odoo:**
    - URL: http://localhost:8069
    - Database: odoo
    - Username: admin
    - Password: admin
 
-3. **Install the FTP addon:**
-   - Go to Apps
-   - Search for "FTP Cuenta Cliente"
-   - Install the addon
+4. **Modules Status:**
+   - ✅ 20 modules already installed and active
+   - Main menus: Field Service, FTP Cuenta Cliente, Sales, Project
+   - All Field Service features are operational
 
 ## Services
 
@@ -48,6 +59,42 @@ addon-ftp/
 - **Database:** odoo
 - **User:** odoo
 - **Password:** odoo
+
+## Available Addons
+
+### ✅ Installed Modules (20 modules active)
+
+#### 🔧 Field Service Management Suite (18 modules)
+- **fieldservice** (v16.0.1.9.0): Core FSM system ✅
+- **fieldservice_account**: Invoice tracking ✅
+- **fieldservice_account_analytic**: Analytic accounting ✅
+- **fieldservice_activity**: Activity checklists ✅
+- **fieldservice_calendar**: Calendar integration ✅
+- **fieldservice_crm**: CRM integration ✅
+- **fieldservice_isp_account**: ISP billing ✅
+- **fieldservice_isp_flow**: ISP workflows ✅
+- **fieldservice_portal**: Customer portal ✅
+- **fieldservice_project**: Project integration ✅
+- **fieldservice_recurring**: Recurring orders ✅
+- **fieldservice_route**: Route planning ✅
+- **fieldservice_sale**: Sales integration ✅
+- **fieldservice_size**: Size management ✅
+- **fieldservice_skill**: Skills management ✅
+- **fieldservice_stage_validation**: Stage validation ✅
+- **fieldservice_vehicle**: Vehicle management ✅
+
+#### 🌐 Other Active Modules
+- **web_domain_field**: Advanced filtering ✅
+- **ftp_cuenta_cliente**: FTP/Excel processing ✅
+
+### ⏳ Available but Not Installed
+- **fieldservice_equipment_stock**: Equipment inventory (requires additional dependencies)
+- **fieldservice_geoengine**: Geographic mapping (requires base_geoengine)
+- **fieldservice_stock**: Inventory movements (requires additional stock modules)
+- **fieldservice_stock_request**: Stock requests (requires stock_request modules)
+- **fieldservice_timeline**: Timeline view (requires web_timeline)
+- **extra_fields_ubicaciones**: Stock location fields
+- **stock_picking_to_batch_group_fields**: Batch picking (requires stock_picking_batch)
 
 ## FTP Addon Features
 
@@ -126,9 +173,27 @@ Menu: FTP Cuenta Cliente > Processed Files
 - `pandas` - Data manipulation
 
 ### Installation Commands
+
+#### Quick Install (Already Installed Modules)
 ```bash
-# Update addon after changes
+# All currently installed modules (20 modules)
+docker exec addon-ftp-web-1 odoo -i base_territory,fieldservice,fieldservice_account,fieldservice_account_analytic,fieldservice_activity,fieldservice_calendar,fieldservice_crm,fieldservice_isp_account,fieldservice_isp_flow,fieldservice_portal,fieldservice_project,fieldservice_recurring,fieldservice_route,fieldservice_sale,fieldservice_size,fieldservice_skill,fieldservice_stage_validation,fieldservice_vehicle,web_domain_field,ftp_cuenta_cliente -d odoo --stop-after-init
+```
+
+#### Fix Python Dependencies (if needed)
+```bash
+# Reinstall compatible versions
+docker exec addon-ftp-web-1 pip uninstall -y numpy pandas bcrypt PyNaCl
+docker exec addon-ftp-web-1 pip install numpy==1.24.3 pandas==2.0.3 bcrypt PyNaCl
+```
+
+#### Update Addons After Changes
+```bash
+# Update specific addon
 docker exec addon-ftp-web-1 odoo -u ftp_cuenta_cliente -d odoo --stop-after-init
+
+# Update all installed addons
+docker exec addon-ftp-web-1 odoo -u all -d odoo --stop-after-init
 
 # Restart services
 docker compose restart web
@@ -138,17 +203,24 @@ docker compose restart web
 
 ### Common Issues
 
-1. **Connection Errors**
+1. **Python Import Errors (numpy/pandas)**
+   ```bash
+   # Fix: Reinstall with compatible versions
+   docker exec addon-ftp-web-1 pip uninstall -y numpy pandas
+   docker exec addon-ftp-web-1 pip install numpy==1.24.3 pandas==2.0.3
+   ```
+
+2. **Module Dependencies Missing**
+   - Some modules require additional OCA addons not included
+   - Check error logs for specific missing dependencies
+   - Install base modules first (base_territory, fieldservice)
+
+3. **FTP Connection Errors**
    - Check server credentials and network access
    - Verify firewall settings
    - Test with different connection types
 
-2. **File Processing Failures**
-   - Ensure Excel files are readable
-   - Check file permissions on FTP server
-   - Review Odoo logs for detailed errors
-
-3. **Database Issues**
+4. **Database Issues**
    - Wait for PostgreSQL health check
    - Check database connection in logs
 
