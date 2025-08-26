@@ -40,6 +40,7 @@
         'views/ftp_config_views.xml',
         'views/ftp_file_views.xml',
         'views/ftp_file_type_views.xml',
+        'views/ftp_column_mapping_views.xml',
         'wizard/ftp_column_mapping_wizard_views.xml',
         'views/menu_views.xml',
         'data/ftp_file_type_data.xml',

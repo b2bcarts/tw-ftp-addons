@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Column Mapping Tree View -->
+        <record id="view_ftp_file_type_column_mapping_tree" model="ir.ui.view">
+            <field name="name">ftp.file.type.column.mapping.tree</field>
+            <field name="model">ftp.file.type.column</field>
+            <field name="arch" type="xml">
+                <tree string="Column Mapping Configuration" editable="bottom" create="false" delete="false">
+                    <field name="sequence" widget="handle" />
+                    <field name="name" readonly="1" />
+                    <field name="data_type" readonly="1" />
+                    <field name="target_model" widget="selection" options="{'no_create': True}" />
+                    <field name="target_field" widget="char" />
+                    <field name="mapping_type" attrs="{'invisible': [('target_model', '=', False)]}" />
+                    <field name="is_required" />
+                    <field name="is_key" />
+                    <field name="example_values" readonly="1" />
+                </tree>
+            </field>
+        </record>
+
+        <!-- Column Mapping Form View -->
+        <record id="view_ftp_file_type_column_mapping_form" model="ir.ui.view">
+            <field name="name">ftp.file.type.column.mapping.form</field>
+            <field name="model">ftp.file.type.column</field>
+            <field name="arch" type="xml">
+                <form string="Column Mapping Configuration">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name" readonly="1" />
+                                <field name="technical_name" readonly="1" />
+                                <field name="data_type" readonly="1" />
+                                <field name="sequence" />
+                            </group>
+                            <group>
+                                <field name="is_required" />
+                                <field name="is_key" />
+                                <field name="description" />
+                            </group>
+                        </group>
+                        
+                        <group string="Target Model Mapping">
+                            <group>
+                                <field name="target_model" widget="selection" options="{'no_create': True}" />
+                                <field name="target_field" attrs="{'invisible': [('target_model', '=', False)]}" />
+                            </group>
+                            <group>
+                                <field name="mapping_type" attrs="{'invisible': [('target_model', '=', False)]}" />
+                                <field name="default_value" />
+                            </group>
+                        </group>
+                        
+                        <notebook attrs="{'invisible': [('target_model', '=', False)]}">
+                            <page string="Field Options" attrs="{'invisible': [('target_model', '=', False)]}">
+                                <group string="Available Fields for Selected Model">
+                                    <field name="target_field" widget="selection" />
+                                </group>
+                            </page>
+                            
+                            <page string="Advanced Configuration" attrs="{'invisible': [('mapping_type', 'not in', ['m2o_create', 'm2o_search', 'compute'])]}">
+                                <group>
+                                    <field name="search_domain" attrs="{'invisible': [('mapping_type', 'not in', ['m2o_create', 'm2o_search'])]}" />
+                                    <field name="transformation_code" attrs="{'invisible': [('mapping_type', '!=', 'compute')]}" />
+                                    <field name="date_format" attrs="{'invisible': [('data_type', '!=', 'date')]}" />
+                                </group>
+                            </page>
+                            
+                            <page string="Examples &amp; Testing">
+                                <group>
+                                    <field name="example_values" />
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action to open column mapping -->
+        <record id="action_ftp_file_type_column_mapping" model="ir.actions.act_window">
+            <field name="name">Column Mapping</field>
+            <field name="res_model">ftp.file.type.column</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_ftp_file_type_column_mapping_tree"/>
+            <field name="context">{'create': False, 'edit': True}</field>
+        </record>
+
+    </data>
+</odoo>

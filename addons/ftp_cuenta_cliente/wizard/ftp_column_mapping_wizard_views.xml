@@ -75,18 +75,15 @@
             <field name="arch" type="xml">
                 <tree string="Column Field Mapping" editable="top">
                     <field name="sequence" widget="handle"/>
-                    <field name="file_type_id" readonly="1" optional="hide"/>
                     <field name="name" readonly="1"/>
                     <field name="technical_name" readonly="1"/>
                     <field name="data_type" readonly="1"/>
                     <field name="is_required" widget="boolean_toggle"/>
                     <field name="is_key" widget="boolean_toggle"/>
                     <field name="mapping_type"/>
-                    <field name="sale_order_field_technical" string="Sale Order Field"/>
-                    <field name="partner_field_technical" string="Partner Field"/>
-                    <field name="product_field_technical" string="Product Field"/>
-                    <field name="fsm_location_field_technical" string="FSM Location Field"/>
-                    <field name="fsm_person_field_technical" string="FSM Person Field"/>
+                    <field name="sale_order_field_technical" string="Sale Order"/>
+                    <field name="product_field_technical" string="Product"/>
+                    <field name="fsm_location_field_technical" string="FSM Location"/>
                 </tree>
             </field>
         </record>
@@ -204,18 +201,11 @@
                     <button name="%(action_ftp_column_mapping_config)d" 
                             type="action" 
                             class="oe_stat_button" 
-                            icon="fa-arrows-h"
-                            context="{'default_file_type_id': active_id}">
+                            icon="fa-cogs"
+                            context="{'default_file_type_id': active_id}"
+                            attrs="{'invisible': [('column_count', '=', 0)]}">
                         <div class="o_stat_info">
-                            <span class="o_stat_text">Field Mapping</span>
-                        </div>
-                    </button>
-                    <button name="action_open_mapping_wizard" 
-                            type="object" 
-                            class="oe_stat_button" 
-                            icon="fa-magic">
-                        <div class="o_stat_info">
-                            <span class="o_stat_text">Mapping Wizard</span>
+                            <span class="o_stat_text">Field SetUp</span>
                         </div>
                     </button>
                 </xpath>

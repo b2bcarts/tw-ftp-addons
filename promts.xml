@@ -5,17 +5,20 @@
         en Odoo.
     </context>
     <instructions>
-    
         - crea una pantalla para asociar las columas de la tabla ftp_file_type_column con las
         columnas de las tablas sale_order, product_template y fsm_localtion
+        - cambia el auto-detect, para que sea una seleccion manual
+        - haz un match de columas para un ejemplo
     </instructions>
     <output>
       - pantalla en odoo para hacer match entre las columnas del archivo y las columnas de las tablas sale_order, product_template y fsm_person
     </output>
     <constrains>
+        - usa MCP playwrigth
         - no crees nuevos skus 
         - no crees nuevas ordenes directamente
     </constrains>    
 </promt>
 
 
+reinicis

@@ -59,20 +59,34 @@ class FtpFileType(models.Model):
             'context': {'default_file_type_id': self.id},
         }
     
-    def action_open_mapping_wizard(self):
-        """Open the column mapping wizard"""
+    def action_open_column_mapping(self):
+        """Open column mapping view for manual configuration"""
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': f'Map Columns for {self.name}',
-            'res_model': 'ftp.column.mapping.wizard',
-            'view_mode': 'form',
-            'target': 'new',
+            'name': f'Column Mapping for {self.name}',
+            'res_model': 'ftp.file.type.column',
+            'view_mode': 'tree,form',
+            'view_id': self.env.ref('ftp_cuenta_cliente.view_ftp_file_type_column_mapping_tree').id,
+            'domain': [('file_type_id', '=', self.id)],
             'context': {
                 'default_file_type_id': self.id,
-                'default_target_model': 'sale.order' if self.create_sale_orders else 'res.partner',
+                'create': True,
+                'edit': True,
             },
         }
+    
+    def action_manual_mapping_setup(self):
+        """Setup manual mapping for all columns"""
+        self.ensure_one()
+        # Reset all auto-detected mappings to manual
+        for column in self.column_ids:
+            if not column.target_model:
+                column.write({
+                    'target_model': 'sale.order',  # Default to sale orders
+                    'target_field': False,
+                })
+        return self.action_open_column_mapping()
     
     @api.model
     def identify_file_type(self, filename, headers=None):
@@ -120,6 +134,16 @@ class FtpFileTypeColumn(models.Model):
     is_required = fields.Boolean('Required', default=False, help="Is this column required for processing?")
     is_key = fields.Boolean('Is Key Field', default=False, help="Is this a key field for grouping or identification?")
     
+    # Target model selection
+    target_model = fields.Selection([
+        ('sale.order', 'Sale Order'),
+        ('product.template', 'Product Template'), 
+        ('fsm.location', 'FSM Location'),
+    ], string='Target Model', help="Select which model this column should map to")
+    
+    # Dynamic field selection based on target model
+    target_field = fields.Char('Target Field', help="Field name in the target model")
+    
     # Mapping configuration for different models
     sale_order_field = fields.Selection([
         ('partner_vat', 'Customer VAT (RUT)'),
@@ -135,14 +159,16 @@ class FtpFileTypeColumn(models.Model):
         help="How this column maps to sale order fields")
     
     # Technical field mappings for different models
-    sale_order_field_technical = fields.Char('Sale Order Field', 
-        help="Technical field name in sale.order model")
+    sale_order_field_technical = fields.Selection('_get_sale_order_fields', 
+        string='Sale Order Field', help="Technical field name in sale.order model")
+    product_field_technical = fields.Selection('_get_product_fields',
+        string='Product Field', help="Technical field name in product.template model")
+    fsm_location_field_technical = fields.Selection('_get_fsm_location_fields',
+        string='FSM Location Field', help="Technical field name in fsm.location model")
+    
+    # Keep these for backwards compatibility
     partner_field_technical = fields.Char('Partner Field', 
         help="Technical field name in res.partner model")
-    product_field_technical = fields.Char('Product Field', 
-        help="Technical field name in product.template or product.product model")
-    fsm_location_field_technical = fields.Char('FSM Location Field',
-        help="Technical field name in fsm.location model")
     fsm_person_field_technical = fields.Char('FSM Person Field', 
         help="Technical field name in fsm.person model")
     order_line_field_technical = fields.Char('Order Line Field', 
@@ -185,3 +211,102 @@ class FtpFileTypeColumn(models.Model):
         if self.name and not self.technical_name:
             # Convert column name to technical name (replace dots and spaces with underscores)
             self.technical_name = self.name.lower().replace('.', '_').replace(' ', '_')
+    
+    @api.model
+    def get_model_fields(self, model_name):
+        """Get available fields for a model"""
+        if not model_name:
+            return []
+        
+        try:
+            model = self.env[model_name]
+            fields_info = model.fields_get()
+            return [(name, field_info['string']) for name, field_info in fields_info.items() 
+                   if not field_info.get('readonly', False) or name in ['id', 'name']]
+        except Exception:
+            return []
+    
+    def get_target_field_options(self):
+        """Get field options for the selected target model"""
+        self.ensure_one()
+        if not self.target_model:
+            return []
+        return self.get_model_fields(self.target_model)
+    
+    @api.model
+    def _get_sale_order_fields(self):
+        """Get selection list of sale order fields"""
+        try:
+            sale_order_fields = self.env['sale.order'].fields_get()
+            common_fields = [
+                ('name', 'Order Reference'),
+                ('partner_id', 'Customer'),
+                ('date_order', 'Order Date'),
+                ('amount_total', 'Total Amount'),
+                ('state', 'Status'),
+                ('client_order_ref', 'Customer Reference'),
+                ('note', 'Terms and Conditions'),
+                ('user_id', 'Salesperson'),
+                ('team_id', 'Sales Team'),
+                ('company_id', 'Company'),
+            ]
+            # Add only existing fields
+            result = []
+            for field_name, field_label in common_fields:
+                if field_name in sale_order_fields:
+                    result.append((field_name, field_label))
+            return result
+        except Exception:
+            return [('name', 'Order Reference')]
+    
+    @api.model
+    def _get_product_fields(self):
+        """Get selection list of product template fields"""
+        try:
+            product_fields = self.env['product.template'].fields_get()
+            common_fields = [
+                ('name', 'Product Name'),
+                ('default_code', 'Internal Reference'),
+                ('list_price', 'Sales Price'),
+                ('standard_price', 'Cost Price'),
+                ('categ_id', 'Product Category'),
+                ('uom_id', 'Unit of Measure'),
+                ('type', 'Product Type'),
+                ('active', 'Active'),
+                ('description', 'Description'),
+                ('barcode', 'Barcode'),
+            ]
+            result = []
+            for field_name, field_label in common_fields:
+                if field_name in product_fields:
+                    result.append((field_name, field_label))
+            return result
+        except Exception:
+            return [('name', 'Product Name')]
+    
+    @api.model
+    def _get_fsm_location_fields(self):
+        """Get selection list of FSM location fields"""
+        try:
+            fsm_fields = self.env['fsm.location'].fields_get()
+            common_fields = [
+                ('name', 'Location Name'),
+                ('partner_id', 'Contact'),
+                ('owner_id', 'Location Owner'),
+                ('street', 'Street'),
+                ('city', 'City'),
+                ('state_id', 'State'),
+                ('zip', 'ZIP Code'),
+                ('country_id', 'Country'),
+                ('phone', 'Phone'),
+                ('email', 'Email'),
+                ('ref', 'Reference'),
+                ('active', 'Active'),
+            ]
+            result = []
+            for field_name, field_label in common_fields:
+                if field_name in fsm_fields:
+                    result.append((field_name, field_label))
+            return result
+        except Exception:
+            return [('name', 'Location Name')]
