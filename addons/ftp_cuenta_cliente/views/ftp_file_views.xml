@@ -10,6 +10,8 @@
                     <header>
                         <button name="view_content" type="object" string="View Content" 
                                 class="btn-primary" icon="fa-eye"/>
+                        <button name="process_to_sale_orders" type="object" string="Create Sale Orders" 
+                                class="btn-success" icon="fa-shopping-cart"/>
                         <button name="reprocess_file" type="object" string="Reprocess" 
                                 class="btn-secondary" icon="fa-refresh"/>
                         <field name="status" widget="statusbar" 
@@ -33,6 +35,7 @@
                                 <field name="row_count"/>
                                 <field name="column_count"/>
                                 <field name="sheet_names"/>
+                                <field name="sale_orders_created"/>
                             </group>
                         </group>
                         <group name="error" string="Error Information" attrs="{'invisible': [('status', '!=', 'error')]}">
@@ -41,6 +44,9 @@
                         <notebook>
                             <page name="content" string="File Content">
                                 <field name="content_json" widget="ace" options="{'mode': 'json'}" nolabel="1"/>
+                            </page>
+                            <page name="processing_log" string="Processing Log">
+                                <field name="processing_log" widget="text" nolabel="1" readonly="1"/>
                             </page>
                         </notebook>
                     </sheet>
@@ -82,12 +88,15 @@
                     <field name="row_count"/>
                     <field name="column_count"/>
                     <field name="processed_date"/>
+                    <field name="sale_orders_created"/>
                     <field name="status" widget="badge" 
                            decoration-info="status == 'downloaded'"
                            decoration-success="status in ('processed', 'moved')"
                            decoration-danger="status == 'error'"/>
                     <button name="view_content" type="object" string="View" 
                             icon="fa-eye" class="btn-link"/>
+                    <button name="process_to_sale_orders" type="object" string="Create Orders" 
+                            icon="fa-shopping-cart" class="btn-link"/>
                     <button name="reprocess_file" type="object" string="Reprocess" 
                             icon="fa-refresh" class="btn-link"
                             attrs="{'invisible': [('status', '=', 'error')]}"/>

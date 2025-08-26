@@ -506,20 +506,11 @@ class FtpService(models.Model):
                         
                         _logger.info(f"Found fsm_location {fsm_location.id} for technician {technician_name}")
                         
-                        # Prepare sale order data
-                        order_name = f"{filename.split('.')[0]} - {technician_name} - Row {row_idx + 1}"
-                        
-                        # Create sale order
-                        sale_order_data = {
-                            'name': order_name,
-                            'partner_id': fsm_location.partner_id.id,
-                            'state': 'draft',
-                            'origin': f"FTP File: {filename}",
-                            'note': self._build_order_notes(row_data, sheet_name, row_idx + 1),
-                            'fsm_location_id': fsm_location.id,  # Link to fsm_location
-                        }
-                        
-                        sale_order = self.env['sale.order'].create(sale_order_data)
+                        # DISABLED: Old direct sale order creation system
+                        # This is now handled by sale_order_processor.py to avoid duplicates
+                        # and follow Odoo naming standards
+                        _logger.info(f"Skipping direct sale order creation for {technician_name} - will be processed by sale_order_processor")
+                        continue
                         
                         # Create order lines based on row data
                         self._create_order_lines(sale_order, row_data)
@@ -855,6 +846,15 @@ class FtpService(models.Model):
                                 })
                                 _logger.info(f"Created file record for: {filename} with {len(created_orders)} sale orders and {total_inventory_moves} inventory moves")
                                 
+                                # Process with sale order processor to generate detailed logs
+                                try:
+                                    processor = self.env['sale.order.processor']
+                                    results = processor.process_ftp_file_to_sale_order(file_record.id)
+                                    _logger.info(f"Sale order processor completed for {filename}. Final orders created: {results.get('orders_created', 0)}")
+                                except Exception as proc_error:
+                                    _logger.warning(f"Sale order processor failed for {filename}: {str(proc_error)}")
+                                    # Don't fail the main process if processor fails
+                                
                                 # Move file to processed directory (only for FTP/SFTP for now)
                                 if connection_info['type'] in ['ftp', 'ftps', 'sftp']:
                                     new_path = config.processed_path + '/' + filename
@@ -929,15 +929,20 @@ class FtpService(models.Model):
             _logger.error(f"Error in scheduled FTP processing: {str(e)}")
     
     def reprocess_file(self, file_id):
-        """Reprocess a specific file record"""
+        """Reprocess a specific file record to create sale orders"""
         try:
             file_record = self.env['ftp.file'].browse(file_id)
-            if file_record and file_record.moved_path:
-                # This would require downloading from the moved location
-                # Implementation depends on specific requirements
-                _logger.info(f"Reprocessing file: {file_record.name}")
-                # Add reprocessing logic here if needed
-            else:
-                _logger.warning(f"File record {file_id} not found or no moved path")
+            if not file_record:
+                _logger.warning(f"File record {file_id} not found")
+                return
+            
+            _logger.info(f"Reprocessing file: {file_record.name}")
+            
+            # Use the sale order processor to process the file
+            processor = self.env['sale.order.processor']
+            results = processor.process_ftp_file_to_sale_order(file_id)
+            
+            _logger.info(f"Reprocessing completed. Orders created: {results.get('orders_created', 0)}")
+            
         except Exception as e:
             _logger.error(f"Error reprocessing file {file_id}: {str(e)}")

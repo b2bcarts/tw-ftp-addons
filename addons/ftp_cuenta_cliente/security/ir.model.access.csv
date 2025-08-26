@@ -4,3 +4,5 @@ access_ftp_config_user,ftp.config.user,model_ftp_config,base.group_user,1,0,0,0
 access_ftp_file_manager,ftp.file.manager,model_ftp_file,base.group_system,1,1,1,1
 access_ftp_file_user,ftp.file.user,model_ftp_file,base.group_user,1,0,0,0
 access_ftp_service_manager,ftp.service.manager,model_ftp_service,base.group_system,1,1,1,1
+access_sale_order_processor_manager,sale.order.processor.manager,model_sale_order_processor,base.group_system,1,1,1,1
+access_sale_order_processor_user,sale.order.processor.user,model_sale_order_processor,base.group_user,1,0,0,0

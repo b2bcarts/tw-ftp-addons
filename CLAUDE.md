@@ -99,6 +99,15 @@ The FTP addon (`addons/ftp_cuenta_cliente/`) implements a multi-protocol file tr
    - Stores processed file metadata
    - Excel content parsing to JSON
    - File history tracking
+   - Integration with sale order processing
+
+4. **Sale Order Processor** (`models/sale_order_processor.py`):
+   - Converts FTP file data into Odoo sale orders
+   - Groups items by 'id.mochila' for order creation
+   - Handles product lookup by SKU (default_code)
+   - Creates/updates customer records based on RUT
+   - Detailed processing logs with success/error tracking
+   - Manages missing SKUs and validation warnings
 
 ### Key Technical Details
 - **Database**: Uses `odoo` database with credentials (user: odoo, password: odoo)
@@ -112,7 +121,13 @@ The FTP addon (`addons/ftp_cuenta_cliente/`) implements a multi-protocol file tr
   1. Downloads Excel files from configured FTP path
   2. Parses content using first row as JSON keys
   3. Stores in database as JSON
-  4. Moves processed files to `/files_read` directory on remote server
+  4. Creates sale orders grouped by 'id.mochila' (optional)
+  5. Moves processed files to `/files_read` directory on remote server
+- **Sale Order Integration**:
+  - Excel data mapped to sale orders via 'id.mochila' grouping
+  - Product lookup by SKU via `default_code` field
+  - Customer creation/update based on RUT field
+  - Comprehensive processing logs with status tracking
 
 ### Configuration Files
 - `docker-compose.yml`: Defines Odoo 16 web service and PostgreSQL 15 database
@@ -142,6 +157,9 @@ Navigate to FTP Cuenta Cliente > FTP Configurations, create/edit a configuration
 ### Manual File Processing
 Open an FTP configuration and click "Process Files Now" to trigger immediate file download and processing.
 
+### Sale Order Creation
+Navigate to FTP Cuenta Cliente > Processed Files, select a file, and click "Create Sale Orders" to convert Excel data into sale orders.
+
 ### Viewing Logs
 ```bash
 # Odoo application logs
@@ -153,6 +171,8 @@ docker exec addon-ftp-web-1 grep -i "ftp\|cron" /var/log/odoo/odoo.log
 
 ### Debugging
 - Check `models/ftp_service.py` for connection logic
+- Review `models/sale_order_processor.py` for sale order creation issues
+- Examine `views/ftp_file_views.xml` for UI functionality
 - Review `data/cron_data.xml` for scheduled job configuration
 - Examine `security/ir.model.access.csv` for permission issues
 
@@ -165,6 +185,13 @@ docker exec addon-ftp-web-1 grep -i "ftp\|cron" /var/log/odoo/odoo.log
   docker exec addon-ftp-web-1 pip uninstall -y numpy pandas bcrypt PyNaCl
   docker exec addon-ftp-web-1 pip install numpy==1.24.3 pandas==2.0.3 bcrypt PyNaCl
   ```
+
+### Sale Order Processing Issues
+Common problems when creating sale orders from FTP files:
+- **SKU not found**: Products must exist with matching `default_code` field
+- **Missing customer data**: RUT field required for customer creation/lookup
+- **Invalid Excel format**: First row must contain column headers matching expected fields
+- **Empty 'id.mochila'**: Required for grouping products into orders
 
 ### Module Dependencies Not Available
 Some modules require additional dependencies not included:

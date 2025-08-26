@@ -30,6 +30,7 @@ class FtpFile(models.Model):
     sheet_names = fields.Text('Sheet Names')
     sale_orders_created = fields.Integer('Sale Orders Created', default=0)
     inventory_moves_created = fields.Integer('Inventory Moves Created', default=0)
+    processing_log = fields.Text('Processing Log', help="Detailed log of each row processing with results")
     
     @api.depends('name')
     def _compute_display_name(self):
@@ -85,5 +86,39 @@ class FtpFile(models.Model):
             'context': {
                 'active_id': self.id,
                 'default_ftp_file_id': self.id,
+            }
+        }
+    
+    def process_to_sale_orders(self):
+        """Process this file to create sale orders"""
+        processor = self.env['sale.order.processor']
+        results = processor.process_ftp_file_to_sale_order(self.id)
+        
+        # Prepare notification message
+        if results['success']:
+            message = f"Processing completed successfully!\n"
+            message += f"Orders created: {results['orders_created']}\n"
+            
+            if results['skus_not_found']:
+                message += f"\nWarning: {len(results['skus_not_found'])} SKUs not found in catalog\n"
+                for sku_info in results['skus_not_found'][:5]:  # Show first 5
+                    message += f"- {sku_info['sku']}: {sku_info['description']}\n"
+                if len(results['skus_not_found']) > 5:
+                    message += f"... and {len(results['skus_not_found']) - 5} more\n"
+            
+            notification_type = 'warning' if results['skus_not_found'] else 'success'
+        else:
+            message = "Processing failed!\n"
+            message += '\n'.join(results['errors'][:5])  # Show first 5 errors
+            notification_type = 'danger'
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Sale Order Processing',
+                'message': message,
+                'type': notification_type,
+                'sticky': True if results['errors'] or results['skus_not_found'] else False,
             }
         }
