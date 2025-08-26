@@ -63,7 +63,6 @@
                                         <field name="data_type"/>
                                         <field name="is_required"/>
                                         <field name="is_key"/>
-                                        <field name="sale_order_field"/>
                                         <field name="description"/>
                                     </tree>
                                 </field>
@@ -93,7 +92,6 @@
                     <field name="data_type"/>
                     <field name="is_required"/>
                     <field name="is_key"/>
-                    <field name="sale_order_field"/>
                     <field name="default_value"/>
                     <field name="description"/>
                 </tree>
@@ -125,10 +123,6 @@
                                 <field name="default_value"/>
                                 <field name="date_format" attrs="{'invisible': [('data_type', 'not in', ['date', 'datetime'])]}"/>
                             </group>
-                        </group>
-                        <group name="mapping" string="Sale Order Mapping">
-                            <field name="sale_order_field"/>
-                            <field name="custom_mapping" widget="ace" options="{'mode': 'python'}" attrs="{'invisible': [('sale_order_field', '!=', 'custom')]}"/>
                         </group>
                         <group name="description" string="Description">
                             <field name="description" nolabel="1" colspan="2"/>
@@ -200,11 +194,5 @@
             action="action_ftp_file_type"
             sequence="30"/>
             
-        <menuitem 
-            id="menu_ftp_file_type_column"
-            name="File Columns"
-            parent="ftp_cuenta_cliente_main_menu"
-            action="action_ftp_file_type_column"
-            sequence="31"/>
     </data>
 </odoo>

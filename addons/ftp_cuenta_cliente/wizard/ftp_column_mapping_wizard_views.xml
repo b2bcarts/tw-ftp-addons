@@ -120,7 +120,6 @@
                         <notebook>
                             <page string="Model Field Mappings" name="mappings">
                                 <group string="Sale Order Mapping">
-                                    <field name="sale_order_field"/>
                                     <field name="sale_order_field_technical" 
                                            placeholder="e.g., partner_id, date_order, client_order_ref"/>
                                 </group>
@@ -212,13 +211,6 @@
             </field>
         </record>
 
-        <!-- Menu for Column Mapping -->
-        <menuitem 
-            id="menu_ftp_column_mapping"
-            name="Column Mapping"
-            parent="ftp_cuenta_cliente_main_menu"
-            action="action_ftp_column_mapping_config"
-            sequence="40"/>
 
     </data>
 </odoo>

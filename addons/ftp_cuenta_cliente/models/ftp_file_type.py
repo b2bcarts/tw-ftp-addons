@@ -145,18 +145,18 @@ class FtpFileTypeColumn(models.Model):
     target_field = fields.Char('Target Field', help="Field name in the target model")
     
     # Mapping configuration for different models
-    sale_order_field = fields.Selection([
-        ('partner_vat', 'Customer VAT (RUT)'),
-        ('partner_name', 'Customer Name'),
-        ('order_ref', 'Order Reference'),
-        ('note', 'Order Notes'),
-        ('product_sku', 'Product SKU'),
-        ('product_qty', 'Product Quantity'),
-        ('date_order', 'Order Date'),
-        ('custom', 'Custom Field'),
-        ('ignore', 'Ignore'),
-    ], string='Sale Order Mapping', default='ignore', 
-        help="How this column maps to sale order fields")
+    # sale_order_field = fields.Selection([
+    #     ('partner_vat', 'Customer VAT (RUT)'),
+    #     ('partner_name', 'Customer Name'),
+    #     ('order_ref', 'Order Reference'),
+    #     ('note', 'Order Notes'),
+    #     ('product_sku', 'Product SKU'),
+    #     ('product_qty', 'Product Quantity'),
+    #     ('date_order', 'Order Date'),
+    #     ('custom', 'Custom Field'),
+    #     ('ignore', 'Ignore'),
+    # ], string='Sale Order Mapping', default='ignore', 
+    #     help="How this column maps to sale order fields")
     
     # Technical field mappings for different models
     sale_order_field_technical = fields.Selection('_get_sale_order_fields', 
@@ -238,17 +238,21 @@ class FtpFileTypeColumn(models.Model):
         """Get selection list of sale order fields"""
         try:
             sale_order_fields = self.env['sale.order'].fields_get()
+            # Using exact database column names
             common_fields = [
-                ('name', 'Order Reference'),
-                ('partner_id', 'Customer'),
-                ('date_order', 'Order Date'),
-                ('amount_total', 'Total Amount'),
-                ('state', 'Status'),
-                ('client_order_ref', 'Customer Reference'),
-                ('note', 'Terms and Conditions'),
-                ('user_id', 'Salesperson'),
-                ('team_id', 'Sales Team'),
-                ('company_id', 'Company'),
+                ('name', 'name'),
+                ('partner_id', 'partner_id'),
+                ('date_order', 'date_order'),
+                ('amount_total', 'amount_total'),
+                ('state', 'state'),
+                ('client_order_ref', 'client_order_ref'),
+                ('note', 'note'),
+                ('user_id', 'user_id'),
+                ('team_id', 'team_id'),
+                ('company_id', 'company_id'),
+                ('amount_tax', 'amount_tax'),
+                ('amount_untaxed', 'amount_untaxed'),
+                ('fsm_location_id', 'fsm_location_id'),
             ]
             # Add only existing fields
             result = []
@@ -257,24 +261,27 @@ class FtpFileTypeColumn(models.Model):
                     result.append((field_name, field_label))
             return result
         except Exception:
-            return [('name', 'Order Reference')]
+            return [('name', 'name')]
     
     @api.model
     def _get_product_fields(self):
         """Get selection list of product template fields"""
         try:
             product_fields = self.env['product.template'].fields_get()
+            # Using exact database column names from product_template
             common_fields = [
-                ('name', 'Product Name'),
-                ('default_code', 'Internal Reference'),
-                ('list_price', 'Sales Price'),
-                ('standard_price', 'Cost Price'),
-                ('categ_id', 'Product Category'),
-                ('uom_id', 'Unit of Measure'),
-                ('type', 'Product Type'),
-                ('active', 'Active'),
-                ('description', 'Description'),
-                ('barcode', 'Barcode'),
+                ('name', 'name'),
+                ('default_code', 'default_code'),
+                ('list_price', 'list_price'),
+                ('categ_id', 'categ_id'),
+                ('uom_id', 'uom_id'),
+                ('type', 'type'),
+                ('detailed_type', 'detailed_type'),
+                ('active', 'active'),
+                ('description', 'description'),
+                ('sequence', 'sequence'),
+                ('priority', 'priority'),
+                ('company_id', 'company_id'),
             ]
             result = []
             for field_name, field_label in common_fields:
@@ -282,26 +289,29 @@ class FtpFileTypeColumn(models.Model):
                     result.append((field_name, field_label))
             return result
         except Exception:
-            return [('name', 'Product Name')]
+            return [('name', 'name')]
     
     @api.model
     def _get_fsm_location_fields(self):
         """Get selection list of FSM location fields"""
         try:
             fsm_fields = self.env['fsm.location'].fields_get()
+            # Using exact database column names from fsm_location
             common_fields = [
-                ('name', 'Location Name'),
-                ('partner_id', 'Contact'),
-                ('owner_id', 'Location Owner'),
-                ('street', 'Street'),
-                ('city', 'City'),
-                ('state_id', 'State'),
-                ('zip', 'ZIP Code'),
-                ('country_id', 'Country'),
-                ('phone', 'Phone'),
-                ('email', 'Email'),
-                ('ref', 'Reference'),
-                ('active', 'Active'),
+                ('name', 'name'),
+                ('partner_id', 'partner_id'),
+                ('owner_id', 'owner_id'),
+                ('customer_id', 'customer_id'),
+                ('contact_id', 'contact_id'),
+                ('description', 'description'),
+                ('direction', 'direction'),
+                ('notes', 'notes'),
+                ('complete_name', 'complete_name'),
+                ('fsm_parent_id', 'fsm_parent_id'),
+                ('fsm_route_id', 'fsm_route_id'),
+                ('branch_id', 'branch_id'),
+                ('district_id', 'district_id'),
+                ('calendar_id', 'calendar_id'),
             ]
             result = []
             for field_name, field_label in common_fields:
@@ -309,4 +319,4 @@ class FtpFileTypeColumn(models.Model):
                     result.append((field_name, field_label))
             return result
         except Exception:
-            return [('name', 'Location Name')]
+            return [('name', 'name')]
