@@ -1,0 +1,21 @@
+<promt>
+    <context>
+        Eres un experto en Odoo V16, y estas desarrollando un addons para la gestion de ordenes, 
+        via archivos que descargas por ftp, y procesas para crear ordenes de compra (sale.order) 
+        en Odoo.
+    </context>
+    <instructions>
+    
+        - crea una pantalla para asociar las columas de la tabla ftp_file_type_column con las
+        columnas de las tablas sale_order, product_template y fsm_localtion
+    </instructions>
+    <output>
+      - pantalla en odoo para hacer match entre las columnas del archivo y las columnas de las tablas sale_order, product_template y fsm_person
+    </output>
+    <constrains>
+        - no crees nuevos skus 
+        - no crees nuevas ordenes directamente
+    </constrains>    
+</promt>
+
+

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Column Mapping Wizard Form View -->
+        <record id="ftp_column_mapping_wizard_view_form" model="ir.ui.view">
+            <field name="name">ftp.column.mapping.wizard.form</field>
+            <field name="model">ftp.column.mapping.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Column Mapping Configuration">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>Map File Columns to Odoo Fields</h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="file_type_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="target_model" widget="selection"/>
+                            </group>
+                        </group>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <strong>Instructions:</strong>
+                            <ul>
+                                <li>Select the target model where data will be imported</li>
+                                <li>Map each file column to the corresponding Odoo field</li>
+                                <li>Use "Auto-detect" to automatically suggest mappings</li>
+                                <li>Review compatibility indicators before saving</li>
+                            </ul>
+                        </div>
+                        
+                        <group string="Column Mappings" colspan="2">
+                            <field name="mapping_line_ids" nolabel="1" colspan="2">
+                                <tree editable="bottom" decoration-success="is_compatible==True" decoration-danger="is_compatible==False and target_field_name" string="Column Mappings">
+                                    <field name="column_name" readonly="1"/>
+                                    <field name="column_description" readonly="1" optional="show"/>
+                                    <field name="data_type" readonly="1"/>
+                                    <field name="is_required" widget="boolean_toggle" readonly="1"/>
+                                    <field name="target_field_selection" string="Target Field" 
+                                           widget="selection"/>
+                                    <field name="target_field_name" invisible="1"/>
+                                    <field name="field_type" readonly="1"/>
+                                    <field name="is_compatible" widget="boolean_toggle" readonly="1" string="OK"/>
+                                    <field name="field_help" readonly="1" optional="hide"/>
+                                    <field name="column_id" invisible="1"/>
+                                    <field name="wizard_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_auto_detect" type="object" string="Auto-detect" class="btn-secondary" icon="fa-magic"/>
+                        <button name="action_clear_mappings" type="object" string="Clear All" class="btn-warning" icon="fa-eraser"/>
+                        <button name="action_save_mapping" type="object" string="Save Mapping" class="btn-primary" icon="fa-save"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Column Mapping Wizard Action -->
+        <record id="action_ftp_column_mapping_wizard" model="ir.actions.act_window">
+            <field name="name">Column Mapping</field>
+            <field name="res_model">ftp.column.mapping.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Enhanced Column Tree View for Mapping -->
+        <record id="ftp_file_type_column_mapping_tree" model="ir.ui.view">
+            <field name="name">ftp.file.type.column.mapping.tree</field>
+            <field name="model">ftp.file.type.column</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <tree string="Column Field Mapping" editable="top">
+                    <field name="sequence" widget="handle"/>
+                    <field name="file_type_id" readonly="1" optional="hide"/>
+                    <field name="name" readonly="1"/>
+                    <field name="technical_name" readonly="1"/>
+                    <field name="data_type" readonly="1"/>
+                    <field name="is_required" widget="boolean_toggle"/>
+                    <field name="is_key" widget="boolean_toggle"/>
+                    <field name="mapping_type"/>
+                    <field name="sale_order_field_technical" string="Sale Order Field"/>
+                    <field name="partner_field_technical" string="Partner Field"/>
+                    <field name="product_field_technical" string="Product Field"/>
+                    <field name="fsm_location_field_technical" string="FSM Location Field"/>
+                    <field name="fsm_person_field_technical" string="FSM Person Field"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Enhanced Column Form View for Mapping -->
+        <record id="ftp_file_type_column_mapping_form" model="ir.ui.view">
+            <field name="name">ftp.file.type.column.mapping.form</field>
+            <field name="model">ftp.file.type.column</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <form string="Column Mapping Configuration">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Column Name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group name="general" string="General Information">
+                                <field name="file_type_id" readonly="1"/>
+                                <field name="technical_name"/>
+                                <field name="sequence"/>
+                                <field name="data_type"/>
+                                <field name="is_required"/>
+                                <field name="is_key"/>
+                            </group>
+                            <group name="format" string="Format Configuration">
+                                <field name="date_format" attrs="{'invisible': [('data_type', 'not in', ['date', 'datetime'])]}"/>
+                                <field name="default_value"/>
+                                <field name="mapping_type"/>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="Model Field Mappings" name="mappings">
+                                <group string="Sale Order Mapping">
+                                    <field name="sale_order_field"/>
+                                    <field name="sale_order_field_technical" 
+                                           placeholder="e.g., partner_id, date_order, client_order_ref"/>
+                                </group>
+                                <group string="Partner (Customer) Mapping">
+                                    <field name="partner_field_technical" 
+                                           placeholder="e.g., vat, name, street, city, phone"/>
+                                </group>
+                                <group string="Product Mapping">
+                                    <field name="product_field_technical" 
+                                           placeholder="e.g., default_code, name, list_price"/>
+                                </group>
+                                <group string="FSM Location Mapping">
+                                    <field name="fsm_location_field_technical" 
+                                           placeholder="e.g., name, street, city, ref"/>
+                                </group>
+                                <group string="FSM Person Mapping">
+                                    <field name="fsm_person_field_technical" 
+                                           placeholder="e.g., name, partner_id, user_id"/>
+                                </group>
+                                <group string="Sale Order Line Mapping">
+                                    <field name="order_line_field_technical" 
+                                           placeholder="e.g., product_id, product_uom_qty, price_unit"/>
+                                </group>
+                            </page>
+                            <page string="Advanced Configuration" name="advanced">
+                                <group string="Search Configuration" attrs="{'invisible': [('mapping_type', 'not in', ['m2o_create', 'm2o_search'])]}">
+                                    <field name="search_domain" widget="ace" options="{'mode': 'python'}"
+                                           placeholder="[('field', '=', value)]"/>
+                                </group>
+                                <group string="Transformation" attrs="{'invisible': [('mapping_type', '!=', 'compute')]}">
+                                    <field name="transformation_code" widget="ace" options="{'mode': 'python'}"
+                                           placeholder="# value contains the original value&#10;# result = value.upper()&#10;result = value"/>
+                                </group>
+                                <group string="Custom Mapping Logic">
+                                    <field name="custom_mapping" widget="ace" options="{'mode': 'python'}"/>
+                                </group>
+                            </page>
+                            <page string="Documentation" name="doc">
+                                <group>
+                                    <field name="description" nolabel="1" colspan="2"/>
+                                    <field name="example_values" nolabel="1" colspan="2" 
+                                           placeholder="Example values from files..."/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Specialized Mapping View -->
+        <record id="action_ftp_column_mapping_config" model="ir.actions.act_window">
+            <field name="name">Field Mapping Configuration</field>
+            <field name="res_model">ftp.file.type.column</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('ftp_file_type_column_mapping_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('ftp_file_type_column_mapping_form')})]"/>
+            <field name="context">{'default_file_type_id': active_id}</field>
+            <field name="domain">[('file_type_id', '=', active_id)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Configure field mappings
+                </p>
+                <p>
+                    Map file columns to Odoo model fields for automatic data import.
+                </p>
+            </field>
+        </record>
+
+        <!-- Button to open mapping wizard from File Type form -->
+        <record id="ftp_file_type_form_inherit_mapping" model="ir.ui.view">
+            <field name="name">ftp.file.type.form.inherit.mapping</field>
+            <field name="model">ftp.file.type</field>
+            <field name="inherit_id" ref="ftp_cuenta_cliente.ftp_file_type_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="%(action_ftp_column_mapping_config)d" 
+                            type="action" 
+                            class="oe_stat_button" 
+                            icon="fa-arrows-h"
+                            context="{'default_file_type_id': active_id}">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">Field Mapping</span>
+                        </div>
+                    </button>
+                    <button name="action_open_mapping_wizard" 
+                            type="object" 
+                            class="oe_stat_button" 
+                            icon="fa-magic">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">Mapping Wizard</span>
+                        </div>
+                    </button>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Menu for Column Mapping -->
+        <menuitem 
+            id="menu_ftp_column_mapping"
+            name="Column Mapping"
+            parent="ftp_cuenta_cliente_main_menu"
+            action="action_ftp_column_mapping_config"
+            sequence="40"/>
+
+    </data>
+</odoo>

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- File Type: Instalaciones -->
+        <record id="ftp_file_type_instalaciones" model="ftp.file.type">
+            <field name="name">Instalaciones</field>
+            <field name="code">instalaciones</field>
+            <field name="description">Archivo de instalaciones con información detallada de tickets, comercios, equipos y técnicos asignados</field>
+            <field name="active">True</field>
+            <field name="sequence">10</field>
+            <field name="file_extension">xlsx</field>
+            <field name="create_sale_orders">True</field>
+            <field name="group_by_field">ticket</field>
+            <field name="column_count">27</field>
+        </record>
+        
+        <!-- Columns for Instalaciones -->
+        <record id="ftp_col_inst_ticket" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">ticket</field>
+            <field name="technical_name">ticket</field>
+            <field name="description">Número de ticket único para la instalación</field>
+            <field name="sequence">1</field>
+            <field name="data_type">char</field>
+            <field name="is_required">True</field>
+            <field name="is_key">True</field>
+            <field name="sale_order_field">order_ref</field>
+        </record>
+        
+        <record id="ftp_col_inst_num_cue" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">num.cue</field>
+            <field name="technical_name">num_cue</field>
+            <field name="description">Número de cuenta</field>
+            <field name="sequence">2</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_inst_ss" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">ss</field>
+            <field name="technical_name">ss</field>
+            <field name="description">Número de servicio</field>
+            <field name="sequence">3</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_inst_tipo_solicitud" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">tipo.solicitud</field>
+            <field name="technical_name">tipo_solicitud</field>
+            <field name="description">Tipo de solicitud</field>
+            <field name="sequence">4</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_inst_cod_comercio" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">cod.comercio</field>
+            <field name="technical_name">cod_comercio</field>
+            <field name="description">Código del comercio</field>
+            <field name="sequence">5</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_inst_rut" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">rut</field>
+            <field name="technical_name">rut</field>
+            <field name="description">RUT del cliente</field>
+            <field name="sequence">13</field>
+            <field name="data_type">char</field>
+            <field name="is_required">True</field>
+            <field name="sale_order_field">partner_vat</field>
+        </record>
+        
+        <record id="ftp_col_inst_razon_social" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">razon.social</field>
+            <field name="technical_name">razon_social</field>
+            <field name="description">Razón social del cliente</field>
+            <field name="sequence">8</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">partner_name</field>
+        </record>
+        
+        <record id="ftp_col_inst_tecnico" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">tecnico</field>
+            <field name="technical_name">tecnico</field>
+            <field name="description">Nombre del técnico asignado</field>
+            <field name="sequence">19</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_inst_fecha_agendada" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">fecha.agendada</field>
+            <field name="technical_name">fecha_agendada</field>
+            <field name="description">Fecha agendada para la instalación</field>
+            <field name="sequence">17</field>
+            <field name="data_type">datetime</field>
+            <field name="sale_order_field">date_order</field>
+            <field name="date_format">%d-%m-%Y %H:%M:%S</field>
+        </record>
+        
+        <!-- Additional columns for completeness -->
+        <record id="ftp_col_inst_region" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">region</field>
+            <field name="technical_name">region</field>
+            <field name="sequence">12</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_inst_comuna" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_instalaciones"/>
+            <field name="name">comuna</field>
+            <field name="technical_name">comuna</field>
+            <field name="sequence">10</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <!-- File Type: RF (Reposición de Flota) -->
+        <record id="ftp_file_type_rf" model="ftp.file.type">
+            <field name="name">RF - Reposición de Flota</field>
+            <field name="code">rf</field>
+            <field name="description">Archivo de reposición de flota con información de mochilas, productos SKU y cantidades</field>
+            <field name="active">True</field>
+            <field name="sequence">20</field>
+            <field name="file_extension">xlsx</field>
+            <field name="create_sale_orders">True</field>
+            <field name="group_by_field">id.mochila</field>
+            <field name="column_count">12</field>
+        </record>
+        
+        <!-- Columns for RF -->
+        <record id="ftp_col_rf_id_mochila" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">id.mochila</field>
+            <field name="technical_name">id_mochila</field>
+            <field name="description">Identificador único de la mochila para agrupar productos</field>
+            <field name="sequence">1</field>
+            <field name="data_type">char</field>
+            <field name="is_required">True</field>
+            <field name="is_key">True</field>
+            <field name="sale_order_field">order_ref</field>
+        </record>
+        
+        <record id="ftp_col_rf_proveedor" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">proveedor</field>
+            <field name="technical_name">proveedor</field>
+            <field name="description">Nombre del proveedor</field>
+            <field name="sequence">2</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">partner_name</field>
+        </record>
+        
+        <record id="ftp_col_rf_fecha_agenda" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">fecha.agenda</field>
+            <field name="technical_name">fecha_agenda</field>
+            <field name="description">Fecha agendada para la entrega</field>
+            <field name="sequence">3</field>
+            <field name="data_type">datetime</field>
+            <field name="sale_order_field">date_order</field>
+            <field name="date_format">%d-%m-%Y %H:%M:%S</field>
+        </record>
+        
+        <record id="ftp_col_rf_tecnico" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">tecnico</field>
+            <field name="technical_name">tecnico</field>
+            <field name="description">Nombre del técnico asignado</field>
+            <field name="sequence">4</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_rf_rut" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">rut</field>
+            <field name="technical_name">rut</field>
+            <field name="description">RUT del cliente</field>
+            <field name="sequence">5</field>
+            <field name="data_type">char</field>
+            <field name="is_required">True</field>
+            <field name="sale_order_field">partner_vat</field>
+        </record>
+        
+        <record id="ftp_col_rf_region" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">region</field>
+            <field name="technical_name">region</field>
+            <field name="description">Región de entrega</field>
+            <field name="sequence">6</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_rf_bodega" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">bodega</field>
+            <field name="technical_name">bodega</field>
+            <field name="description">Bodega de origen</field>
+            <field name="sequence">7</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_rf_codigo_iata" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">codigo.iata</field>
+            <field name="technical_name">codigo_iata</field>
+            <field name="description">Código IATA del aeropuerto</field>
+            <field name="sequence">8</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+        <record id="ftp_col_rf_sku" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">sku</field>
+            <field name="technical_name">sku</field>
+            <field name="description">Código SKU del producto</field>
+            <field name="sequence">9</field>
+            <field name="data_type">char</field>
+            <field name="is_required">True</field>
+            <field name="sale_order_field">product_sku</field>
+        </record>
+        
+        <record id="ftp_col_rf_descripcion" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">descripcion</field>
+            <field name="technical_name">descripcion</field>
+            <field name="description">Descripción del producto</field>
+            <field name="sequence">10</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">ignore</field>
+        </record>
+        
+        <record id="ftp_col_rf_cantidad" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">cantidad</field>
+            <field name="technical_name">cantidad</field>
+            <field name="description">Cantidad del producto</field>
+            <field name="sequence">11</field>
+            <field name="data_type">float</field>
+            <field name="is_required">True</field>
+            <field name="sale_order_field">product_qty</field>
+            <field name="default_value">1</field>
+        </record>
+        
+        <record id="ftp_col_rf_comentario" model="ftp.file.type.column">
+            <field name="file_type_id" ref="ftp_file_type_rf"/>
+            <field name="name">comentario</field>
+            <field name="technical_name">comentario</field>
+            <field name="description">Comentarios adicionales</field>
+            <field name="sequence">12</field>
+            <field name="data_type">char</field>
+            <field name="sale_order_field">note</field>
+        </record>
+        
+    </data>
+</odoo>

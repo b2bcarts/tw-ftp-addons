@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- FTP File Type Tree View -->
+        <record id="ftp_file_type_view_tree" model="ir.ui.view">
+            <field name="name">ftp.file.type.tree</field>
+            <field name="model">ftp.file.type</field>
+            <field name="arch" type="xml">
+                <tree string="File Types">
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="file_extension"/>
+                    <field name="column_count"/>
+                    <field name="create_sale_orders"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- FTP File Type Form View -->
+        <record id="ftp_file_type_view_form" model="ir.ui.view">
+            <field name="name">ftp.file.type.form</field>
+            <field name="model">ftp.file.type</field>
+            <field name="arch" type="xml">
+                <form string="File Type Configuration">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_columns" type="object" class="oe_stat_button" icon="fa-list">
+                                <field name="column_count" widget="statinfo" string="Columns"/>
+                            </button>
+                        </div>
+                        <widget name="web_ribbon" title="Archived" bg_color="bg-danger" attrs="{'invisible': [('active', '=', True)]}"/>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="File Type Name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group name="general" string="General Information">
+                                <field name="code"/>
+                                <field name="sequence"/>
+                                <field name="active" invisible="1"/>
+                                <field name="file_extension"/>
+                                <field name="encoding" attrs="{'invisible': [('file_extension', '!=', 'csv')]}"/>
+                                <field name="delimiter" attrs="{'invisible': [('file_extension', '!=', 'csv')]}"/>
+                            </group>
+                            <group name="processing" string="Processing Configuration">
+                                <field name="create_sale_orders"/>
+                                <field name="group_by_field" attrs="{'invisible': [('create_sale_orders', '=', False)], 'required': [('create_sale_orders', '=', True)]}"/>
+                            </group>
+                        </group>
+                        <group name="description" string="Description">
+                            <field name="description" nolabel="1" colspan="2"/>
+                        </group>
+                        <notebook>
+                            <page string="Columns" name="columns">
+                                <field name="column_ids">
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="name"/>
+                                        <field name="technical_name"/>
+                                        <field name="data_type"/>
+                                        <field name="is_required"/>
+                                        <field name="is_key"/>
+                                        <field name="sale_order_field"/>
+                                        <field name="description"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Sample Data" name="sample">
+                                <group>
+                                    <field name="sample_file_path"/>
+                                    <field name="sample_data" widget="ace" options="{'mode': 'json'}"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- FTP File Type Column Tree View -->
+        <record id="ftp_file_type_column_view_tree" model="ir.ui.view">
+            <field name="name">ftp.file.type.column.tree</field>
+            <field name="model">ftp.file.type.column</field>
+            <field name="arch" type="xml">
+                <tree string="File Type Columns" editable="top">
+                    <field name="sequence" widget="handle"/>
+                    <field name="file_type_id"/>
+                    <field name="name"/>
+                    <field name="technical_name"/>
+                    <field name="data_type"/>
+                    <field name="is_required"/>
+                    <field name="is_key"/>
+                    <field name="sale_order_field"/>
+                    <field name="default_value"/>
+                    <field name="description"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- FTP File Type Column Form View -->
+        <record id="ftp_file_type_column_view_form" model="ir.ui.view">
+            <field name="name">ftp.file.type.column.form</field>
+            <field name="model">ftp.file.type.column</field>
+            <field name="arch" type="xml">
+                <form string="Column Configuration">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Column Name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group name="general" string="General">
+                                <field name="file_type_id"/>
+                                <field name="technical_name"/>
+                                <field name="sequence"/>
+                                <field name="data_type"/>
+                            </group>
+                            <group name="validation" string="Validation">
+                                <field name="is_required"/>
+                                <field name="is_key"/>
+                                <field name="default_value"/>
+                                <field name="date_format" attrs="{'invisible': [('data_type', 'not in', ['date', 'datetime'])]}"/>
+                            </group>
+                        </group>
+                        <group name="mapping" string="Sale Order Mapping">
+                            <field name="sale_order_field"/>
+                            <field name="custom_mapping" widget="ace" options="{'mode': 'python'}" attrs="{'invisible': [('sale_order_field', '!=', 'custom')]}"/>
+                        </group>
+                        <group name="description" string="Description">
+                            <field name="description" nolabel="1" colspan="2"/>
+                            <field name="example_values" nolabel="1" colspan="2" placeholder="Example values from files..."/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search Views -->
+        <record id="ftp_file_type_view_search" model="ir.ui.view">
+            <field name="name">ftp.file.type.search</field>
+            <field name="model">ftp.file.type</field>
+            <field name="arch" type="xml">
+                <search string="Search File Types">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                    <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+                    <separator/>
+                    <filter string="Creates Sale Orders" name="creates_orders" domain="[('create_sale_orders', '=', True)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Extension" name="group_extension" context="{'group_by': 'file_extension'}"/>
+                        <filter string="Active" name="group_active" context="{'group_by': 'active'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Actions -->
+        <record id="action_ftp_file_type" model="ir.actions.act_window">
+            <field name="name">File Types</field>
+            <field name="res_model">ftp.file.type</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="ftp_file_type_view_search"/>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new file type configuration
+                </p>
+                <p>
+                    Define the structure and columns for different types of files
+                    that will be processed from FTP servers.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_ftp_file_type_column" model="ir.actions.act_window">
+            <field name="name">File Columns</field>
+            <field name="res_model">ftp.file.type.column</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Define file columns
+                </p>
+                <p>
+                    Configure the columns for each file type and their mapping
+                    to Odoo fields.
+                </p>
+            </field>
+        </record>
+
+        <!-- Menu Items -->
+        <menuitem 
+            id="menu_ftp_file_type"
+            name="File Types"
+            parent="ftp_cuenta_cliente_main_menu"
+            action="action_ftp_file_type"
+            sequence="30"/>
+            
+        <menuitem 
+            id="menu_ftp_file_type_column"
+            name="File Columns"
+            parent="ftp_cuenta_cliente_main_menu"
+            action="action_ftp_file_type_column"
+            sequence="31"/>
+    </data>
+</odoo>

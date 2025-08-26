@@ -6,3 +6,11 @@ access_ftp_file_user,ftp.file.user,model_ftp_file,base.group_user,1,0,0,0
 access_ftp_service_manager,ftp.service.manager,model_ftp_service,base.group_system,1,1,1,1
 access_sale_order_processor_manager,sale.order.processor.manager,model_sale_order_processor,base.group_system,1,1,1,1
 access_sale_order_processor_user,sale.order.processor.user,model_sale_order_processor,base.group_user,1,0,0,0
+access_ftp_file_type_manager,ftp.file.type.manager,model_ftp_file_type,base.group_system,1,1,1,1
+access_ftp_file_type_user,ftp.file.type.user,model_ftp_file_type,base.group_user,1,1,0,0
+access_ftp_file_type_column_manager,ftp.file.type.column.manager,model_ftp_file_type_column,base.group_system,1,1,1,1
+access_ftp_file_type_column_user,ftp.file.type.column.user,model_ftp_file_type_column,base.group_user,1,1,0,0
+access_ftp_column_mapping_wizard_manager,ftp.column.mapping.wizard.manager,model_ftp_column_mapping_wizard,base.group_system,1,1,1,1
+access_ftp_column_mapping_wizard_user,ftp.column.mapping.wizard.user,model_ftp_column_mapping_wizard,base.group_user,1,1,1,1
+access_ftp_column_mapping_wizard_line_manager,ftp.column.mapping.wizard.line.manager,model_ftp_column_mapping_wizard_line,base.group_system,1,1,1,1
+access_ftp_column_mapping_wizard_line_user,ftp.column.mapping.wizard.line.user,model_ftp_column_mapping_wizard_line,base.group_user,1,1,1,1
