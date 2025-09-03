@@ -1,55 +1,142 @@
+# -*- coding: utf-8 -*-
+"""
+Modelo de Configuración FTP
+Maneja las credenciales y configuraciones para conexiones FTP/SFTP/SCP.
+"""
+
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 import ftplib
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class FtpConfig(models.Model):
+    """
+    Modelo para almacenar configuraciones de conexión FTP/SFTP/SCP.
+    Soporta múltiples protocolos y gestiona las credenciales de acceso.
+    """
     _name = 'ftp.config'
-    _description = 'FTP Configuration'
+    _description = 'Configuración FTP para lectura de archivos'
     _rec_name = 'name'
 
-    name = fields.Char('Configuration Name', required=True)
-    host = fields.Char('FTP Host', required=True)
-    port = fields.Integer('FTP Port', default=21)
-    username = fields.Char('Username', required=True)
-    password = fields.Char('Password', required=True)
-    active = fields.Boolean('Active', default=True)
-    use_tls = fields.Boolean('Use TLS/SSL', default=False)
+    # Campos de configuración básica
+    name = fields.Char(
+        string='Nombre de Configuración', 
+        required=True,
+        help='Nombre descriptivo para identificar esta configuración FTP'
+    )
+    host = fields.Char(
+        string='Servidor FTP', 
+        required=True,
+        help='Dirección IP o nombre del servidor FTP/SFTP'
+    )
+    port = fields.Integer(
+        string='Puerto', 
+        default=21,
+        help='Puerto de conexión (21 para FTP, 22 para SFTP/SCP)'
+    )
+    username = fields.Char(
+        string='Usuario', 
+        required=True,
+        help='Nombre de usuario para autenticación'
+    )
+    password = fields.Char(
+        string='Contraseña', 
+        required=True,
+        help='Contraseña para autenticación'
+    )
+    active = fields.Boolean(
+        string='Activo', 
+        default=True,
+        help='Si está activo, se procesarán archivos de esta configuración'
+    )
+    use_tls = fields.Boolean(
+        string='Usar TLS/SSL', 
+        default=False,
+        help='Habilitar seguridad TLS/SSL para conexiones FTP'
+    )
+    # Tipo de conexión
     connection_type = fields.Selection([
         ('ftp', 'FTP'),
-        ('ftps', 'FTPS (FTP with TLS)'),
+        ('ftps', 'FTPS (FTP con TLS)'),
         ('sftp', 'SFTP (SSH)'),
-        ('scp', 'SCP (Secure Copy)')
-    ], string='Connection Type', default='ftp', required=True)
-    download_path = fields.Char('Download Path', default='/', help='FTP path to download files from')
-    processed_path = fields.Char('Processed Path', default='/files_read', help='FTP path to move processed files')
+        ('scp', 'SCP (Copia Segura)')
+    ], 
+    string='Tipo de Conexión', 
+    default='ftp', 
+    required=True,
+    help='Protocolo a utilizar para la conexión')
+    # Rutas de procesamiento
+    download_path = fields.Char(
+        string='Ruta de Descarga', 
+        default='/', 
+        help='Ruta en el servidor FTP donde se encuentran los archivos a procesar'
+    )
+    processed_path = fields.Char(
+        string='Ruta de Procesados', 
+        default='/files_read', 
+        help='Ruta donde se moverán los archivos después de procesarlos'
+    )
     
-    # Scheduling
-    cron_interval = fields.Integer('Interval (minutes)', default=30, help='How often to check for new files')
-    last_sync = fields.Datetime('Last Sync', readonly=True)
+    # Programación y sincronización
+    cron_interval = fields.Integer(
+        string='Intervalo (minutos)', 
+        default=30, 
+        help='Frecuencia para verificar nuevos archivos en el servidor FTP'
+    )
+    last_sync = fields.Datetime(
+        string='Última Sincronización', 
+        readonly=True,
+        help='Fecha y hora de la última sincronización exitosa'
+    )
     
-    # Status
+    # Estado de conexión
     connection_status = fields.Selection([
-        ('not_tested', 'Not Tested'),
-        ('success', 'Connected'),
-        ('failed', 'Connection Failed')
-    ], default='not_tested', readonly=True)
+        ('not_tested', 'No Probado'),
+        ('success', 'Conectado'),
+        ('failed', 'Conexión Fallida')
+    ], 
+    string='Estado de Conexión',
+    default='not_tested', 
+    readonly=True,
+    help='Estado actual de la conexión FTP')
     
     
     @api.constrains('port')
     def _check_port(self):
+        """
+        Valida que el puerto esté en el rango válido (1-65535).
+        
+        :raises ValidationError: Si el puerto está fuera del rango válido
+        """
         for record in self:
             if record.port <= 0 or record.port > 65535:
-                raise ValidationError("Port must be between 1 and 65535")
+                raise ValidationError("El puerto debe estar entre 1 y 65535")
     
     @api.constrains('cron_interval')
     def _check_interval(self):
+        """
+        Valida que el intervalo de sincronización sea mayor a 0.
+        
+        :raises ValidationError: Si el intervalo es menor o igual a 0
+        """
         for record in self:
             if record.cron_interval <= 0:
-                raise ValidationError("Interval must be greater than 0")
+                raise ValidationError("El intervalo debe ser mayor a 0 minutos")
     
     
     def test_connection(self):
-        """Test FTP/SFTP connection"""
+        """
+        Prueba la conexión FTP/SFTP/SCP con los parámetros configurados.
+        
+        Intenta establecer una conexión según el tipo configurado y realiza
+        operaciones básicas para verificar que las credenciales y permisos
+        son correctos.
+        
+        :return: Acción de cliente para mostrar notificación del resultado
+        :rtype: dict
+        """
         import logging
         import paramiko
         _logger = logging.getLogger(__name__)
@@ -170,16 +257,26 @@ class FtpConfig(models.Model):
                 }
     
     def process_files_now(self):
-        """Manual trigger for file processing"""
+        """
+        Ejecuta manualmente el procesamiento de archivos FTP.
+        
+        Dispara el procesamiento inmediato de archivos en el servidor FTP
+        configurado, sin esperar al siguiente ciclo del cron job.
+        
+        :return: Acción de cliente para mostrar notificación
+        :rtype: dict
+        """
         for record in self:
             if record.active:
                 self.env['ftp.service'].process_ftp_files(record.id)
+                _logger.info(f"Procesamiento manual iniciado para: {record.name}")
+        
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': 'Processing Started',
-                'message': 'FTP file processing has been triggered',
+                'title': 'Procesamiento Iniciado',
+                'message': 'El procesamiento de archivos FTP ha sido iniciado',
                 'type': 'info',
             }
         }

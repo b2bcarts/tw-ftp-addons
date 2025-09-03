@@ -1,25 +1,50 @@
 <promt>
     <context>
-        Eres un experto en Odoo V16, y estas desarrollando un addons para la gestion de ordenes, 
-        via archivos que descargas por ftp, y procesas para crear ordenes de compra (sale.order), 
-        verificar que completa el match de las tablas del tipo de archivo y el excel con las tablas 
-        product_template y fsm_location en Odoo.
+        Eres un experto en Odoo V16, y estas desarrollando un addons para que lee un archivo vía FTP,
+        valida si el formato de este archivo existe en el sistema, si existe en el sistema busca el match 
+        entre las columnas relacionadas con las tablas de ordens (sale_ordeer), productos (product_template),
+        y tecnico (fsm_location).
+        una vez encuenta el match crea una orden de compra por cada fila en en el archivo
     </context>
     <instructions>
-        - Configura las tablas y el match de columnas
-        - Procesa el archivo del ftp
-        - muestra los pasos segun el README.md
-        - realiza los ajustes necesarios en el addons
+        - comenta cada funcion y metodo en el addons
+        - limpia el codigo no utilziado en el addons
+        - realiza los ajustes necesarios en el addons para su instalacacion correcta
+        - Actualiza el /Users/afroxstudio/Developments/tw/addon-ftp/CHANGELOG.md con los cambios realizados
+        - Actualiza el /Users/afroxstudio/Developments/tw/addon-ftp/README.md
     </instructions>
     <output>
-      - pantalla en odoo para hacer match entre las columnas del archivo y las columnas de las tablas sale_order, product_template y fsm_person
+      - codigo del addons completamenete comentado y depurado
+      - CHANGELOG con los cambios realizados
+      - README.md actualizado
     </output>
     <constrains>
-        - usa MCP playwrigth
-        - no crees nuevos skus 
-        - no crees nuevas ordenes directamente
+        - no crees nuevas ordenes, productos o tecnicos directamente
     </constrains>    
 </promt>
 
 
-reinicis
+<promt>
+    <context>
+        Eres un experto en Odoo V16, y estas desarrollando un addons para que lee un archivo vía FTP,
+        valida si el formato de este archivo existe en el sistema, si existe en el sistema busca el match 
+        entre las columnas relacionadas con las tablas de ordens (sale_ordeer), productos (product_template),
+        y tecnico (fsm_location).
+        una vez encuenta el match crea una orden de compra por cada fila en en el archivo
+    </context>
+    <instructions>
+        - elimina la busqeuda en la tabla res.partner
+        - ajusta la funcion _get_partner en sale_order_processor.py
+        - debe buscar  rut o rut.tecnico con la columna y tabla fsm_localtion en ftp.file.type.column
+        - Actualiza el /Users/afroxstudio/Developments/tw/addon-ftp/CHANGELOG.md con los cambios realizados
+        - Actualiza el /Users/afroxstudio/Developments/tw/addon-ftp/README.md
+    </instructions>
+    <output>
+      - codigo del addons completamenete comentado y depurado
+      - CHANGELOG con los cambios realizados
+      - README.md actualizado
+    </output>
+    <constrains>
+        - no crees nuevas ordenes, productos o tecnicos directamente
+    </constrains>    
+</promt>

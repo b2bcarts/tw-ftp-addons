@@ -3,14 +3,20 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-This is an Odoo 16 Field Service Management platform with FTP integration using Docker Compose. The project provides a comprehensive suite of Field Service Management modules along with custom FTP/SFTP/SCP file transfer capabilities for automated Excel processing.
+Odoo 16 Field Service Management platform with custom FTP integration for automated Excel file processing and sale order generation. The system uses Docker Compose for containerization and supports multiple file transfer protocols (FTP/FTPS/SFTP/SCP).
 
 ## Development Commands
 
-### Starting the Environment
+### Environment Management
 ```bash
 # Start services (database must be healthy before web starts)
 docker compose up -d
+
+# Stop services
+docker compose down
+
+# Restart web service after code changes
+docker compose restart web
 
 # View logs
 docker compose logs -f web
@@ -23,38 +29,22 @@ docker compose logs -f db
 docker exec -it addon-ftp-web-1 odoo -i base -d odoo --stop-after-init
 ```
 
-### Addon Management
-
-#### Currently Installed Modules (20 total)
+### Addon Development Commands
 ```bash
-# Core modules
-base_territory, fieldservice
-
-# Field Service Extensions (16 modules)
-fieldservice_account, fieldservice_account_analytic, fieldservice_activity,
-fieldservice_calendar, fieldservice_crm, fieldservice_isp_account,
-fieldservice_isp_flow, fieldservice_portal, fieldservice_project,
-fieldservice_recurring, fieldservice_route, fieldservice_sale,
-fieldservice_size, fieldservice_skill, fieldservice_stage_validation,
-fieldservice_vehicle
-
-# Other modules
-ftp_cuenta_cliente, web_domain_field
-```
-
-#### Common Commands
-```bash
-# Install a single addon
+# Install a new addon
 docker exec addon-ftp-web-1 odoo -i <addon_name> -d odoo --stop-after-init
 
-# Update addon after code changes
+# Update addon after code changes (most common during development)
 docker exec addon-ftp-web-1 odoo -u <addon_name> -d odoo --stop-after-init
+
+# Update FTP addon specifically
+docker exec addon-ftp-web-1 odoo -u ftp_cuenta_cliente -d odoo --stop-after-init
 
 # Update all installed addons
 docker exec addon-ftp-web-1 odoo -u all -d odoo --stop-after-init
 
-# Restart web service after changes
-docker compose restart web
+# Check addon installation status
+docker exec addon-ftp-web-1 odoo shell -d odoo -c "env['ir.module.module'].search([('name','=','<addon_name>')]).state"
 ```
 
 ### Container Access
@@ -64,138 +54,151 @@ docker exec -it addon-ftp-web-1 bash
 
 # Access PostgreSQL
 docker exec -it addon-ftp-db-1 psql -U odoo -d odoo
+
+# Python shell with Odoo environment
+docker exec -it addon-ftp-web-1 odoo shell -d odoo
+```
+
+### Python Package Management
+```bash
+# Install/reinstall packages for Odoo 16 compatibility
+docker exec addon-ftp-web-1 pip install numpy==1.24.3 pandas==2.0.3 openpyxl paramiko bcrypt PyNaCl
+
+# Fix binary package issues
+docker exec addon-ftp-web-1 pip uninstall -y numpy pandas bcrypt PyNaCl
+docker exec addon-ftp-web-1 pip install --no-cache-dir numpy==1.24.3 pandas==2.0.3 bcrypt PyNaCl
 ```
 
 ## Architecture
 
-### Installed Module Groups
+### Core System Components
 
-#### Field Service Management Suite
-- **Core**: Complete field service operations management
-- **Accounting**: Invoice tracking and analytic accounting
-- **CRM/Sales**: Lead conversion and sales order integration  
-- **Project Management**: Task and project integration
-- **Scheduling**: Calendar, recurring orders, and route planning
-- **Resource Management**: Skills, vehicles, and validation rules
-- **Customer Portal**: Self-service access for customers
-- **ISP Features**: Specialized workflows and time-based billing
+#### Docker Services
+- **web**: Odoo 16 application server (port 8069)
+  - Auto-installs base module on startup
+  - Mounts custom addons from `./addons`
+  - Configuration from `./config/odoo.conf`
+- **db**: PostgreSQL 15 database (port 5432)
+  - Health checks ensure availability before Odoo starts
+  - Credentials: odoo/odoo
 
-### Core Components
-The FTP addon (`addons/ftp_cuenta_cliente/`) implements a multi-protocol file transfer system with:
+#### FTP Addon Architecture (`addons/ftp_cuenta_cliente/`)
 
-1. **FTP Configuration Model** (`models/ftp_config.py`):
-   - Stores connection credentials and settings
-   - Supports FTP, FTPS, SFTP, and SCP protocols
-   - Manages cron jobs for scheduled file processing
-   - Connection testing functionality
+The addon follows Odoo's MVC pattern with clear separation of concerns:
 
-2. **FTP Service** (`models/ftp_service.py`):
-   - Protocol-specific connection handlers
-   - File download and transfer logic
-   - Directory management (moving processed files)
-   - Error handling and retry mechanisms
+1. **Models Layer** (`models/`)
+   - `ftp_config.py`: Multi-protocol connection configuration (FTP/FTPS/SFTP/SCP)
+   - `ftp_service.py`: Protocol handlers and file transfer logic
+   - `ftp_file.py`: File metadata and Excel-to-JSON parsing
+   - `ftp_file_type.py`: File type definitions with column mappings
+   - `sale_order_processor.py`: Excel-to-sale-order conversion engine
 
-3. **FTP File Model** (`models/ftp_file.py`):
-   - Stores processed file metadata
-   - Excel content parsing to JSON
-   - File history tracking
-   - Integration with sale order processing
+2. **Views Layer** (`views/`)
+   - Configuration forms for FTP connections
+   - File processing monitoring interfaces
+   - Column mapping configuration screens
 
-4. **Sale Order Processor** (`models/sale_order_processor.py`):
-   - Converts FTP file data into Odoo sale orders
-   - Groups items by 'id.mochila' for order creation
-   - Handles product lookup by SKU (default_code)
-   - Creates/updates customer records based on RUT
-   - Detailed processing logs with success/error tracking
-   - Manages missing SKUs and validation warnings
+3. **Wizard Layer** (`wizard/`)
+   - `ftp_column_mapping_wizard.py`: Dynamic field mapping between Excel columns and Odoo models
 
-### Key Technical Details
-- **Database**: Uses `odoo` database with credentials (user: odoo, password: odoo)
-- **Admin Access**: Default admin/admin credentials for web interface
-- **Python Dependencies**: 
-  - `paramiko` (SSH/SFTP connections)
-  - `openpyxl` and `pandas==2.0.3` (Excel processing)
-  - `numpy==1.24.3` (Data operations)
-  - `bcrypt` and `PyNaCl` (Security)
-- **File Processing Flow**: 
-  1. Downloads Excel files from configured FTP path
-  2. Parses content using first row as JSON keys
-  3. Stores in database as JSON
-  4. Creates sale orders grouped by 'id.mochila' (optional)
-  5. Moves processed files to `/files_read` directory on remote server
-- **Sale Order Integration**:
-  - Excel data mapped to sale orders via 'id.mochila' grouping
-  - Product lookup by SKU via `default_code` field
-  - Customer creation/update based on RUT field
-  - Comprehensive processing logs with status tracking
+4. **Data Files** (`data/`)
+   - `cron_data.xml`: Scheduled job (30-minute intervals)
+   - `ftp_file_type_data.xml`: Predefined file type configurations
 
-### Configuration Files
-- `docker-compose.yml`: Defines Odoo 16 web service and PostgreSQL 15 database
-- `config/odoo.conf`: Odoo server configuration (ports, database, addons path)
-- `addons/ftp_cuenta_cliente/__manifest__.py`: Addon metadata and dependencies
+### File Processing Workflow
+
+1. **Connection Phase**: FTP service connects using configured protocol
+2. **Download Phase**: Retrieves Excel files from remote path
+3. **Parse Phase**: Converts Excel to JSON using first row as keys
+4. **Store Phase**: Saves parsed data in `ftp.file` records
+5. **Process Phase**: Creates sale orders grouped by 'id.mochila'
+6. **Cleanup Phase**: Moves processed files to `/files_read` on remote
+
+### Sale Order Generation Logic
+
+The system maps Excel data to Odoo sale orders:
+- Groups products by `id.mochila` field
+- Matches products via SKU (`default_code`)
+- Creates/updates customers using RUT field
+- Generates detailed processing logs
+
+### Currently Installed Modules (20 total)
+
+**Core Modules:**
+- `base_territory`: Territory management
+- `fieldservice`: Core field service functionality
+
+**Field Service Extensions (16 modules):**
+- Account integration: `fieldservice_account`, `fieldservice_account_analytic`
+- CRM/Sales: `fieldservice_crm`, `fieldservice_sale`
+- Scheduling: `fieldservice_calendar`, `fieldservice_recurring`, `fieldservice_route`
+- Resources: `fieldservice_skill`, `fieldservice_vehicle`, `fieldservice_size`
+- Project: `fieldservice_project`, `fieldservice_activity`
+- ISP: `fieldservice_isp_account`, `fieldservice_isp_flow`
+- Other: `fieldservice_portal`, `fieldservice_stage_validation`
+
+**Custom Modules:**
+- `ftp_cuenta_cliente`: FTP file processing
+- `web_domain_field`: Domain field widget
 
 ## Access Points
-- **Odoo Web Interface**: http://localhost:8069
-- **PostgreSQL Database**: localhost:5432
-- **Main Menu Structures**:
-  - Field Service > Orders / Locations / Teams / Workers
+- **Odoo Web**: http://localhost:8069 (admin/admin)
+- **PostgreSQL**: localhost:5432 (odoo/odoo)
+- **Main Menus**:
   - FTP Cuenta Cliente > FTP Configurations / Processed Files
+  - Field Service > Orders / Locations / Teams / Workers
   - Sales > Orders / Customers
-  - Project > Projects / Tasks
 
-## Development Workflow
-1. Make changes to addon files in `addons/ftp_cuenta_cliente/`
-2. Update the addon: `docker exec addon-ftp-web-1 odoo -u ftp_cuenta_cliente -d odoo --stop-after-init`
-3. Restart if needed: `docker compose restart web`
-4. Test via web interface at http://localhost:8069
-
-## Common Tasks
+## Common Development Tasks
 
 ### Testing FTP Connections
-Navigate to FTP Cuenta Cliente > FTP Configurations, create/edit a configuration, and use the "Test Connection" button.
+1. Navigate to FTP Cuenta Cliente > FTP Configurations
+2. Create/edit configuration
+3. Click "Test Connection" button
 
 ### Manual File Processing
-Open an FTP configuration and click "Process Files Now" to trigger immediate file download and processing.
+1. Open FTP configuration record
+2. Click "Process Files Now" action button
 
-### Sale Order Creation
-Navigate to FTP Cuenta Cliente > Processed Files, select a file, and click "Create Sale Orders" to convert Excel data into sale orders.
+### Creating Sale Orders from Excel
+1. Navigate to FTP Cuenta Cliente > Processed Files
+2. Select processed file
+3. Click "Create Sale Orders" button
 
-### Viewing Logs
+### Debugging Cron Jobs
 ```bash
-# Odoo application logs
-docker compose logs -f web
+# Check cron execution
+docker exec addon-ftp-web-1 grep -i "cron\|ftp" /var/log/odoo/odoo.log
 
-# Check cron job execution
-docker exec addon-ftp-web-1 grep -i "ftp\|cron" /var/log/odoo/odoo.log
+# Test cron method manually
+docker exec -it addon-ftp-web-1 odoo shell -d odoo
+>>> env['ftp.service'].cron_process_ftp_files()
 ```
 
-### Debugging
-- Check `models/ftp_service.py` for connection logic
-- Review `models/sale_order_processor.py` for sale order creation issues
-- Examine `views/ftp_file_views.xml` for UI functionality
-- Review `data/cron_data.xml` for scheduled job configuration
-- Examine `security/ir.model.access.csv` for permission issues
+## Troubleshooting
 
-## Known Issues & Solutions
+### Module Update Not Reflecting
+```bash
+# Force update with cache clear
+docker exec addon-ftp-web-1 odoo -u ftp_cuenta_cliente -d odoo --stop-after-init
+docker compose restart web
+```
 
-### Python Package Compatibility
-- Use `numpy==1.24.3` and `pandas==2.0.3` for Odoo 16 compatibility
-- Reinstall binary packages if import errors occur:
-  ```bash
-  docker exec addon-ftp-web-1 pip uninstall -y numpy pandas bcrypt PyNaCl
-  docker exec addon-ftp-web-1 pip install numpy==1.24.3 pandas==2.0.3 bcrypt PyNaCl
-  ```
+### Sale Order Creation Failures
+Check for:
+- Products with matching `default_code` (SKU)
+- Valid RUT in customer data
+- Non-empty `id.mochila` for grouping
+- Correct Excel column headers
 
-### Sale Order Processing Issues
-Common problems when creating sale orders from FTP files:
-- **SKU not found**: Products must exist with matching `default_code` field
-- **Missing customer data**: RUT field required for customer creation/lookup
-- **Invalid Excel format**: First row must contain column headers matching expected fields
-- **Empty 'id.mochila'**: Required for grouping products into orders
+### Connection Issues
+- Verify network access to FTP server
+- Check protocol-specific ports (21 for FTP, 22 for SFTP/SCP)
+- Validate credentials and paths
+- Review `models/ftp_service.py` connection handlers
 
-### Module Dependencies Not Available
-Some modules require additional dependencies not included:
-- **fieldservice_geoengine**: Requires `base_geoengine`
-- **fieldservice_timeline**: Requires `web_timeline`
-- **fieldservice_stock_request**: Requires `stock_request` modules
-- **stock_picking_to_batch_group_fields**: Requires `stock_picking_batch`
+### Missing Dependencies
+Some field service modules have unmet dependencies:
+- `fieldservice_geoengine`: Requires `base_geoengine`
+- `fieldservice_timeline`: Requires `web_timeline`
+- `fieldservice_stock_request`: Requires `stock_request`
